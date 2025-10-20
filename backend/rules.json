@@ -1,0 +1,62 @@
+{
+    "R1": {
+        "IF": ["fase_vegetatif", "daun_menguning_dari_bawah", "pertumbuhan_terhambat"],
+        "THEN": "Kekurangan_N_Nitrogen",
+        "CF": 0.90
+    },
+    "R2": {
+        "IF": ["fase_generatif", "daun_menguning_dari_bawah", "daun_muda_normal"],
+        "THEN": "Kekurangan_N_Nitrogen",
+        "CF": 0.85
+    },
+    "R3": {
+        "IF": ["fase_generatif", "tepi_daun_hangus_kecoklatan", "buah_berkembang_buruk"],
+        "THEN": "Kekurangan_K_Kalium",
+        "CF": 0.95
+    },
+    "R4": {
+        "IF": ["fase_vegetatif", "kuning_diantara_tulang_daun_tua", "tepi_daun_hangus_kecoklatan"],
+        "THEN": "Kekurangan_K_Kalium",
+        "CF": 0.75
+    },
+    "R5": {
+        "IF": ["fase_generatif", "buah_cabai_busuk_ujung_atau_pecah", "daun_muda_keriting_distorsi"],
+        "THEN": "Kekurangan_Ca_Kalsium",
+        "CF": 0.98
+    },
+    "R6": {
+        "IF": ["fase_vegetatif", "daun_muda_keriting_distorsi", "titik_tumbuh_mati"],
+        "THEN": "Kekurangan_Ca_Kalsium",
+        "CF": 0.88
+    },
+    "R7": {
+        "IF": ["fase_vegetatif", "daun_tua_berwarna_ungu_gelap", "pertumbuhan_terhambat"],
+        "THEN": "Kekurangan_P_Fosfor",
+        "CF": 0.87
+    },
+    "R8": {
+        "IF": ["fase_generatif", "daun_tua_berwarna_ungu_gelap", "gagal_berbunga"],
+        "THEN": "Kekurangan_P_Fosfor",
+        "CF": 0.80
+    },
+    "R9": {
+        "IF": ["fase_vegetatif", "kuning_diantara_tulang_daun_tua", "urat_daun_tetap_hijau"],
+        "THEN": "Kekurangan_Mg_Magnesium",
+        "CF": 0.93
+    },
+    "R10": {
+        "IF": ["fase_generatif", "kuning_diantara_tulang_daun_tua", "gagal_berbunga"],
+        "THEN": "Kekurangan_Mg_Magnesium",
+        "CF": 0.85
+    },
+    "R11": {
+        "IF": ["fase_generatif", "titik_tumbuh_mati", "gagal_berbunga", "buah_bentuk_aneh"],
+        "THEN": "Kekurangan_B_Boron",
+        "CF": 0.95
+    },
+    "R12": {
+        "IF": ["fase_vegetatif", "batang_cabai_rapuh_atau_pecah", "daun_muda_distorsi"],
+        "THEN": "Kekurangan_B_Boron",
+        "CF": 0.88
+    }
+}
