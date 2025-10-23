@@ -1,62 +1,248 @@
 {
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-10-23",
+    "domain": "Pemupukan Tanaman Cabai",
+    "expert_source": "Balai Penelitian Tanaman Sayuran (Balitsa) & Praktisi Pertanian"
+  },
+  "rules": {
     "R1": {
-        "IF": ["fase_vegetatif", "daun_menguning_dari_bawah", "pertumbuhan_terhambat"],
-        "THEN": "Kekurangan_N_Nitrogen",
-        "CF": 0.90
+      "IF": ["fase_vegetatif", "daun_kuning_merata", "pertumbuhan_lambat"],
+      "THEN": {
+        "diagnosis": "Kekurangan Nitrogen (N)",
+        "pupuk": "Urea atau ZA",
+        "dosis": "150-200 kg/ha atau 15-20 gram/tanaman",
+        "metode": "Aplikasi bertahap setiap 2 minggu",
+        "waktu_aplikasi": "Pagi hari sebelum jam 10 atau sore setelah jam 15"
+      },
+      "CF": 0.9,
+      "explanation": "Nitrogen sangat penting untuk pertumbuhan vegetatif. Daun kuning merata dan pertumbuhan lambat adalah indikator kuat kekurangan N.",
+      "literatur": "Balitsa Guidelines 2023"
     },
     "R2": {
-        "IF": ["fase_generatif", "daun_menguning_dari_bawah", "daun_muda_normal"],
-        "THEN": "Kekurangan_N_Nitrogen",
-        "CF": 0.85
+      "IF": ["fase_vegetatif", "daun_tua_kuning", "tulang_daun_ungu"],
+      "THEN": {
+        "diagnosis": "Kekurangan Fosfor (P)",
+        "pupuk": "SP-36 atau TSP",
+        "dosis": "100-150 kg/ha atau 10-15 gram/tanaman",
+        "metode": "Aplikasi di lubang tanam sebelum pindah tanam",
+        "waktu_aplikasi": "Saat persiapan lahan, 1-2 minggu sebelum tanam"
+      },
+      "CF": 0.85,
+      "explanation": "Fosfor penting untuk perkembangan akar. Daun tua menguning dengan tulang daun ungu adalah ciri khas defisiensi P.",
+      "literatur": "Plant Nutrition Manual 2022"
     },
     "R3": {
-        "IF": ["fase_generatif", "tepi_daun_hangus_kecoklatan", "buah_berkembang_buruk"],
-        "THEN": "Kekurangan_K_Kalium",
-        "CF": 0.95
+      "IF": ["fase_vegetatif", "tepi_daun_kuning_kecoklatan", "daun_menggulung"],
+      "THEN": {
+        "diagnosis": "Kekurangan Kalium (K)",
+        "pupuk": "KCl atau K2SO4",
+        "dosis": "150-200 kg/ha atau 15-20 gram/tanaman",
+        "metode": "Aplikasi bersama pemupukan Nitrogen",
+        "waktu_aplikasi": "Bersamaan dengan pemupukan susulan"
+      },
+      "CF": 0.88,
+      "explanation": "Kalium penting untuk ketahanan tanaman. Tepi daun kuning kecoklatan dan menggulung menunjukkan defisiensi K.",
+      "literatur": "Nutrient Management in Chili 2023"
     },
     "R4": {
-        "IF": ["fase_vegetatif", "kuning_diantara_tulang_daun_tua", "tepi_daun_hangus_kecoklatan"],
-        "THEN": "Kekurangan_K_Kalium",
-        "CF": 0.75
+      "IF": ["fase_vegetatif", "daun_muda_kuning", "tulang_daun_hijau"],
+      "THEN": {
+        "diagnosis": "Kekurangan Besi (Fe)",
+        "pupuk": "Fe-EDTA atau Chelated Iron",
+        "dosis": "2-5 kg/ha atau semprot foliar 0.1-0.2%",
+        "metode": "Aplikasi foliar atau soil drench",
+        "waktu_aplikasi": "Pagi hari dengan interval 7-10 hari"
+      },
+      "CF": 0.82,
+      "explanation": "Besi diperlukan untuk pembentukan klorofil. Klorosis interveinal pada daun muda adalah tanda defisiensi Fe.",
+      "literatur": "Micronutrient Deficiency Symptoms 2022"
     },
     "R5": {
-        "IF": ["fase_generatif", "buah_cabai_busuk_ujung_atau_pecah", "daun_muda_keriting_distorsi"],
-        "THEN": "Kekurangan_Ca_Kalsium",
-        "CF": 0.98
+      "IF": ["fase_vegetatif", "pertumbuhan_kerdil", "ruas_batang_pendek"],
+      "THEN": {
+        "diagnosis": "Kekurangan Zinc (Zn)",
+        "pupuk": "ZnSO4 (Zinc Sulfat)",
+        "dosis": "10-20 kg/ha atau semprot foliar 0.3-0.5%",
+        "metode": "Aplikasi foliar atau soil application",
+        "waktu_aplikasi": "Setiap 2 minggu sejak 3 MST"
+      },
+      "CF": 0.80,
+      "explanation": "Zinc penting untuk sintesis hormon pertumbuhan. Kerdil dan ruas pendek menunjukkan defisiensi Zn.",
+      "literatur": "Zinc in Plant Nutrition 2021"
     },
     "R6": {
-        "IF": ["fase_vegetatif", "daun_muda_keriting_distorsi", "titik_tumbuh_mati"],
-        "THEN": "Kekurangan_Ca_Kalsium",
-        "CF": 0.88
+      "IF": ["fase_generatif", "bunga_rontok", "pembentukan_buah_sedikit"],
+      "THEN": {
+        "diagnosis": "Kekurangan Boron (B)",
+        "pupuk": "Borax atau Boron Foliar",
+        "dosis": "5-10 kg/ha atau semprot foliar 0.1-0.2%",
+        "metode": "Aplikasi foliar saat pembungaan",
+        "waktu_aplikasi": "Saat muncul bunga pertama dan ulangi setiap minggu"
+      },
+      "CF": 0.87,
+      "explanation": "Boron krusial untuk pembungaan dan pembuahan. Bunga rontok adalah indikator defisiensi B.",
+      "literatur": "Boron Role in Flowering 2023"
     },
     "R7": {
-        "IF": ["fase_vegetatif", "daun_tua_berwarna_ungu_gelap", "pertumbuhan_terhambat"],
-        "THEN": "Kekurangan_P_Fosfor",
-        "CF": 0.87
+      "IF": ["fase_generatif", "buah_kecil", "kualitas_rendah"],
+      "THEN": {
+        "diagnosis": "Kekurangan Kalium (K) fase generatif",
+        "pupuk": "KNO3 (Kalium Nitrat)",
+        "dosis": "200-250 kg/ha atau 20-25 gram/tanaman",
+        "metode": "Aplikasi rutin setiap 2 minggu",
+        "waktu_aplikasi": "Sejak pembungaan hingga panen"
+      },
+      "CF": 0.90,
+      "explanation": "Kalium sangat penting untuk ukuran dan kualitas buah. Defisiensi K pada fase generatif menurunkan hasil panen.",
+      "literatur": "Potassium in Fruit Quality 2022"
     },
     "R8": {
-        "IF": ["fase_generatif", "daun_tua_berwarna_ungu_gelap", "gagal_berbunga"],
-        "THEN": "Kekurangan_P_Fosfor",
-        "CF": 0.80
+      "IF": ["fase_generatif", "ujung_buah_busuk", "bercak_hitam_ujung_buah"],
+      "THEN": {
+        "diagnosis": "Kekurangan Kalsium (Ca) - Blossom End Rot",
+        "pupuk": "Ca(NO3)2 atau Kalsium foliar",
+        "dosis": "Semprot foliar 0.3-0.5% setiap minggu",
+        "metode": "Aplikasi foliar rutin + perbaikan drainase",
+        "waktu_aplikasi": "Mulai fase bunga hingga buah muda terbentuk"
+      },
+      "CF": 0.92,
+      "explanation": "Kalsium penting untuk struktur dinding sel. Blossom end rot adalah gejala khas defisiensi Ca.",
+      "literatur": "Calcium Nutrition and BER 2023"
     },
     "R9": {
-        "IF": ["fase_vegetatif", "kuning_diantara_tulang_daun_tua", "urat_daun_tetap_hijau"],
-        "THEN": "Kekurangan_Mg_Magnesium",
-        "CF": 0.93
+      "IF": ["fase_generatif", "daun_pucat_kekuningan", "produksi_menurun"],
+      "THEN": {
+        "diagnosis": "Kekurangan Magnesium (Mg)",
+        "pupuk": "Kieserite atau MgSO4",
+        "dosis": "50-75 kg/ha atau semprot foliar 1-2%",
+        "metode": "Aplikasi soil atau foliar",
+        "waktu_aplikasi": "Setiap 3 minggu selama masa produksi"
+      },
+      "CF": 0.84,
+      "explanation": "Magnesium adalah komponen klorofil. Defisiensi Mg menurunkan fotosintesis dan produktivitas.",
+      "literatur": "Magnesium Role in Photosynthesis 2022"
     },
     "R10": {
-        "IF": ["fase_generatif", "kuning_diantara_tulang_daun_tua", "gagal_berbunga"],
-        "THEN": "Kekurangan_Mg_Magnesium",
-        "CF": 0.85
+      "IF": ["fase_generatif", "warna_buah_pucat", "pematangan_tidak_merata"],
+      "THEN": {
+        "diagnosis": "Kekurangan Nitrogen (N) fase generatif",
+        "pupuk": "Urea + KNO3",
+        "dosis": "100-150 kg/ha Urea + 150 kg/ha KNO3",
+        "metode": "Aplikasi seimbang N:K = 1:1.5",
+        "waktu_aplikasi": "Setiap 2 minggu selama masa panen"
+      },
+      "CF": 0.86,
+      "explanation": "Nitrogen tetap dibutuhkan fase generatif untuk kualitas buah. Balans dengan K untuk hasil optimal.",
+      "literatur": "Balanced Fertilization in Productive Phase 2023"
     },
     "R11": {
-        "IF": ["fase_generatif", "titik_tumbuh_mati", "gagal_berbunga", "buah_bentuk_aneh"],
-        "THEN": "Kekurangan_B_Boron",
-        "CF": 0.95
+      "IF": ["daun_kuning_merata", "tepi_daun_kecoklatan", "pertumbuhan_lambat"],
+      "THEN": {
+        "diagnosis": "Kekurangan NPK Kombinasi",
+        "pupuk": "NPK Majemuk 16-16-16 atau 15-15-15",
+        "dosis": "300-400 kg/ha atau 30-40 gram/tanaman",
+        "metode": "Aplikasi berkala setiap 3 minggu",
+        "waktu_aplikasi": "Sejak 2 MST hingga masa produksi"
+      },
+      "CF": 0.88,
+      "explanation": "Gejala menunjukkan kekurangan multiple nutrisi. Pupuk majemuk memberikan solusi balanced.",
+      "literatur": "Compound Fertilizer Application 2023"
     },
     "R12": {
-        "IF": ["fase_vegetatif", "batang_cabai_rapuh_atau_pecah", "daun_muda_distorsi"],
-        "THEN": "Kekurangan_B_Boron",
-        "CF": 0.88
+      "IF": ["fase_vegetatif", "tanah_pH_rendah", "daun_muda_kuning"],
+      "THEN": {
+        "diagnosis": "pH Tanah Rendah + Defisiensi Mikronutrien",
+        "pupuk": "Dolomit + Mikronutrien Chelated",
+        "dosis": "1-2 ton/ha Dolomit + 10 kg/ha mikronutrien",
+        "metode": "Aplikasi dolomit 2 minggu sebelum tanam + foliar mikronutrien",
+        "waktu_aplikasi": "Pengapuran saat olah tanah, mikronutrien saat vegetatif"
+      },
+      "CF": 0.81,
+      "explanation": "pH rendah menghambat ketersediaan nutrisi. Pengapuran diperlukan untuk optimasi serapan hara.",
+      "literatur": "Soil pH Management 2022"
     }
+  },
+  "nutrient_database": {
+    "N": {
+      "name": "Nitrogen",
+      "symbol": "N",
+      "fungsi_utama": "Pertumbuhan vegetatif, pembentukan klorofil, sintesis protein",
+      "mobilitas": "Mobile",
+      "gejala_defisiensi": "Daun kuning merata dimulai dari daun tua",
+      "gejala_kelebihan": "Pertumbuhan vegetatif berlebihan, rentan penyakit"
+    },
+    "P": {
+      "name": "Fosfor",
+      "symbol": "P",
+      "fungsi_utama": "Perkembangan akar, pembungaan, transfer energi (ATP)",
+      "mobilitas": "Mobile",
+      "gejala_defisiensi": "Daun tua keunguan, pertumbuhan akar terhambat",
+      "gejala_kelebihan": "Defisiensi Zn dan Fe terinduksi"
+    },
+    "K": {
+      "name": "Kalium",
+      "symbol": "K",
+      "fungsi_utama": "Kualitas buah, ketahanan penyakit, regulasi stomata",
+      "mobilitas": "Mobile",
+      "gejala_defisiensi": "Tepi daun kecoklatan dan menggulung",
+      "gejala_kelebihan": "Defisiensi Mg dan Ca terinduksi"
+    },
+    "Ca": {
+      "name": "Kalsium",
+      "symbol": "Ca",
+      "fungsi_utama": "Struktur dinding sel, pemanjangan sel, kualitas buah",
+      "mobilitas": "Immobile",
+      "gejala_defisiensi": "Ujung buah busuk (BER), daun muda keriput",
+      "gejala_kelebihan": "Jarang terjadi, dapat induksi defisiensi Mg"
+    },
+    "Mg": {
+      "name": "Magnesium",
+      "symbol": "Mg",
+      "fungsi_utama": "Komponen klorofil, aktivator enzim, fotosintesis",
+      "mobilitas": "Mobile",
+      "gejala_defisiensi": "Klorosis interveinal pada daun tua",
+      "gejala_kelebihan": "Antagonis dengan Ca dan K"
+    },
+    "Fe": {
+      "name": "Besi",
+      "symbol": "Fe",
+      "fungsi_utama": "Pembentukan klorofil, respirasi, metabolisme nitrogen",
+      "mobilitas": "Immobile",
+      "gejala_defisiensi": "Klorosis interveinal pada daun muda",
+      "gejala_kelebihan": "Bronzing pada daun"
+    },
+    "Zn": {
+      "name": "Zinc",
+      "symbol": "Zn",
+      "fungsi_utama": "Sintesis hormon IAA, pertumbuhan, pembentukan klorofil",
+      "mobilitas": "Immobile",
+      "gejala_defisiensi": "Pertumbuhan kerdil, ruas pendek, daun kecil",
+      "gejala_kelebihan": "Klorosis Fe terinduksi"
+    },
+    "B": {
+      "name": "Boron",
+      "symbol": "B",
+      "fungsi_utama": "Pembungaan, pembuahan, transport karbohidrat",
+      "mobilitas": "Immobile",
+      "gejala_defisiensi": "Bunga rontok, titik tumbuh mati, buah deformasi",
+      "gejala_kelebihan": "Nekrosis tepi daun"
+    }
+  },
+  "growth_phases": {
+    "vegetatif": {
+      "periode": "0-60 HST",
+      "karakteristik": "Pertumbuhan daun dan batang",
+      "nutrisi_kritis": ["N", "P", "K"],
+      "rasio_npk": "3:1:2",
+      "frekuensi_pemupukan": "Setiap 2 minggu"
+    },
+    "generatif": {
+      "periode": ">60 HST",
+      "karakteristik": "Pembungaan dan pembuahan",
+      "nutrisi_kritis": ["K", "Ca", "B", "N"],
+      "rasio_npk": "1:1:2",
+      "frekuensi_pemupukan": "Setiap 1-2 minggu"
+    }
+  }
 }
