@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Leaf, Sprout, FlaskConical, BookOpen, BarChart3, Info, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { fetchSymptoms, diagnose, fetchRules, deleteRule, updateRule } from './api/api.js';
 import toast, { Toaster } from 'react-hot-toast';
+import cabaiImg from "./assets/cabai.avif";
+
 
 const itemsPerPage = 5;
 
@@ -134,11 +136,13 @@ const ExpertSystemUI = () => {
     <div className="space-y-8">
       {/* Hero Section */}
       <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-        <img 
-          src="https://images.unsplash.com/photo-1583419319058-d0b57fbb1364?q=80&w=2000" 
-          alt="Chili Plants"
-          className="w-full h-full object-cover"
-        />
+      <img
+        src={cabaiImg}
+        alt="Chili Plants"
+        className="w-full h-full object-cover"
+      />
+
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
           <div className="p-8 text-white">
             <h1 className="text-4xl font-bold mb-3">🌶️ Sistem Pakar Pemupukan Cabai</h1>
