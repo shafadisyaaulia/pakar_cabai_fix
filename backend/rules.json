@@ -1,248 +1,830 @@
 {
   "metadata": {
-    "version": "1.0",
-    "last_updated": "2025-10-23",
-    "domain": "Pemupukan Tanaman Cabai",
-    "expert_source": "Balai Penelitian Tanaman Sayuran (Balitsa) & Praktisi Pertanian"
+    "version": "2.0",
+    "domain": "Sistem Pakar Pemupukan Tanaman Cabai",
+    "expert_source": "Balai Penelitian Tanaman Sayuran",
+    "created_at": "2025-10-24T14:00:00",
+    "inference_method": "Forward Chaining with Certainty Factor",
+    "fuzzy_logic_enabled": true,
+    "last_updated": "2025-10-24T14:00:00",
+    "total_rules": 20
   },
   "rules": {
-    "R1": {
-      "IF": ["fase_vegetatif", "daun_kuning_merata", "pertumbuhan_lambat"],
+    "R001": {
+      "IF": [
+        "fase_vegetatif_lanjut",
+        "daun_kuning_merata",
+        "pertumbuhan_lambat"
+      ],
       "THEN": {
         "diagnosis": "Kekurangan Nitrogen (N)",
+        "severity": "Tinggi",
         "pupuk": "Urea atau ZA",
-        "dosis": "150-200 kg/ha atau 15-20 gram/tanaman",
-        "metode": "Aplikasi bertahap setiap 2 minggu",
-        "waktu_aplikasi": "Pagi hari sebelum jam 10 atau sore setelah jam 15"
+        "dosis": "150-200 kg/ha",
+        "dosis_per_tanaman": "5-7 gram/tanaman",
+        "metode": "Kocor atau tabur, aplikasi bertahap setiap 2 minggu",
+        "waktu_aplikasi": "Pagi atau sore hari",
+        "precaution": "Hindari aplikasi saat hujan, segera siram setelah aplikasi"
       },
       "CF": 0.9,
-      "explanation": "Nitrogen sangat penting untuk pertumbuhan vegetatif. Daun kuning merata dan pertumbuhan lambat adalah indikator kuat kekurangan N.",
-      "literatur": "Balitsa Guidelines 2023"
+      "explanation": "Nitrogen sangat penting untuk pertumbuhan vegetatif...",
+      "hash": "A1",
+      "confidence_level": "Sangat Tinggi",
+      "antecedents": [
+        "fase_vegetatif_lanjut",
+        "daun_kuning_merata",
+        "pertumbuhan_lambat"
+      ],
+      "cf": 0.8,
+      "consequent": "Kekurangan Nitrogen (N)",
+      "id": "R001",
+      "recommendation": {
+        "diagnosis": "Kekurangan Nitrogen (N)",
+        "dosis": "150-200 kg/ha",
+        "dosis_per_tanaman": "5-7 gram/tanaman",
+        "metode": "Kocor atau tabur, aplikasi bertahap setiap 2 minggu",
+        "precaution": "Hindari aplikasi saat hujan, segera siram setelah aplikasi",
+        "pupuk": "Urea atau ZA",
+        "severity": "Tinggi",
+        "waktu_aplikasi": "Pagi atau sore hari"
+      },
+      "status": "active",
+      "version": "1.0"
     },
-    "R2": {
-      "IF": ["fase_vegetatif", "daun_tua_kuning", "tulang_daun_ungu"],
+    "R002": {
+      "IF": [
+        "fase_vegetatif_lanjut",
+        "daun_tua_keunguan",
+        "pertumbuhan_lambat"
+      ],
       "THEN": {
         "diagnosis": "Kekurangan Fosfor (P)",
+        "severity": "Sedang",
         "pupuk": "SP-36 atau TSP",
-        "dosis": "100-150 kg/ha atau 10-15 gram/tanaman",
-        "metode": "Aplikasi di lubang tanam sebelum pindah tanam",
-        "waktu_aplikasi": "Saat persiapan lahan, 1-2 minggu sebelum tanam"
+        "dosis": "100-150 kg/ha",
+        "dosis_per_tanaman": "3-4 gram/tanaman",
+        "metode": "Tabur di sekeliling tanaman",
+        "waktu_aplikasi": "Setelah 2 minggu tanam",
+        "precaution": "Campur pupuk ke tanah, hindari kontak langsung dengan akar"
       },
-      "CF": 0.85,
-      "explanation": "Fosfor penting untuk perkembangan akar. Daun tua menguning dengan tulang daun ungu adalah ciri khas defisiensi P.",
-      "literatur": "Plant Nutrition Manual 2022"
+      "CF": 0.7,
+      "explanation": "Ciri klasik kekurangan fosfor adalah daun tua keunguan...",
+      "hash": "A2",
+      "confidence_level": "Tinggi"
     },
-    "R3": {
-      "IF": ["fase_vegetatif", "tepi_daun_kuning_kecoklatan", "daun_menggulung"],
+    "R003": {
+      "IF": [
+        "fase_vegetatif_lanjut",
+        "tepi_daun_terbakar",
+        "buah_kecil"
+      ],
       "THEN": {
         "diagnosis": "Kekurangan Kalium (K)",
-        "pupuk": "KCl atau K2SO4",
-        "dosis": "150-200 kg/ha atau 15-20 gram/tanaman",
-        "metode": "Aplikasi bersama pemupukan Nitrogen",
-        "waktu_aplikasi": "Bersamaan dengan pemupukan susulan"
+        "severity": "Tinggi",
+        "pupuk": "KCl atau KNO3",
+        "dosis": "100-150 kg/ha",
+        "dosis_per_tanaman": "3-5 gram/tanaman",
+        "metode": "Kocor atau tabur",
+        "waktu_aplikasi": "Awal pembentukan buah",
+        "precaution": "Jangan berikan secara berlebihan"
       },
-      "CF": 0.88,
-      "explanation": "Kalium penting untuk ketahanan tanaman. Tepi daun kuning kecoklatan dan menggulung menunjukkan defisiensi K.",
-      "literatur": "Nutrient Management in Chili 2023"
+      "CF": 0.8,
+      "explanation": "Kalium berperan untuk pembentukan dan kualitas buah...",
+      "hash": "A3",
+      "confidence_level": "Tinggi"
     },
-    "R4": {
-      "IF": ["fase_vegetatif", "daun_muda_kuning", "tulang_daun_hijau"],
+    "R004": {
+      "IF": [
+        "daun_sangat_hijau_gelap",
+        "pertumbuhan_vegetatif_berlebihan",
+        "bunga_terlambat"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Besi (Fe)",
-        "pupuk": "Fe-EDTA atau Chelated Iron",
-        "dosis": "2-5 kg/ha atau semprot foliar 0.1-0.2%",
-        "metode": "Aplikasi foliar atau soil drench",
-        "waktu_aplikasi": "Pagi hari dengan interval 7-10 hari"
+        "diagnosis": "Kelebihan Nitrogen (N)",
+        "severity": "Sedang",
+        "pupuk": "Kurangi Urea, tingkatkan K & P",
+        "dosis": "Berikan pupuk NPK seimbang",
+        "dosis_per_tanaman": "-",
+        "metode": "Perbaiki komposisi pemupukan",
+        "waktu_aplikasi": "-",
+        "precaution": "Aplikasikan air secukupnya untuk melarutkan kelebihan"
       },
-      "CF": 0.82,
-      "explanation": "Besi diperlukan untuk pembentukan klorofil. Klorosis interveinal pada daun muda adalah tanda defisiensi Fe.",
-      "literatur": "Micronutrient Deficiency Symptoms 2022"
+      "CF": 0.8,
+      "explanation": "Kelebihan Nitrogen menyebabkan tanaman rimbun tapi berbunga lambat.",
+      "hash": "A4",
+      "confidence_level": "Tinggi"
     },
-    "R5": {
-      "IF": ["fase_vegetatif", "pertumbuhan_kerdil", "ruas_batang_pendek"],
+    "R005": {
+      "IF": [
+        "daun_tua_menguning_duluan",
+        "tanaman_kerdil",
+        "pertumbuhan_sangat_lambat"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Zinc (Zn)",
-        "pupuk": "ZnSO4 (Zinc Sulfat)",
-        "dosis": "10-20 kg/ha atau semprot foliar 0.3-0.5%",
-        "metode": "Aplikasi foliar atau soil application",
-        "waktu_aplikasi": "Setiap 2 minggu sejak 3 MST"
+        "diagnosis": "Kekurangan Nitrogen Parah",
+        "severity": "Sangat Tinggi",
+        "pupuk": "Urea dosis dinaikkan",
+        "dosis": "200 kg/ha",
+        "dosis_per_tanaman": "8-10 gram/tanaman",
+        "metode": "Kocor segera",
+        "waktu_aplikasi": "Jika gejala muncul",
+        "precaution": "Jangan sampai terlalu kering"
       },
-      "CF": 0.80,
-      "explanation": "Zinc penting untuk sintesis hormon pertumbuhan. Kerdil dan ruas pendek menunjukkan defisiensi Zn.",
-      "literatur": "Zinc in Plant Nutrition 2021"
+      "CF": 1.0,
+      "explanation": "Kekurangan N parah menyebabkan tanaman tidak berkembang.",
+      "hash": "A5",
+      "confidence_level": "Sangat Tinggi"
     },
-    "R6": {
-      "IF": ["fase_generatif", "bunga_rontok", "pembentukan_buah_sedikit"],
+    "R006": {
+      "IF": [
+        "daun_tua_keunguan",
+        "akar_pendek",
+        "buah_mikro"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Boron (B)",
-        "pupuk": "Borax atau Boron Foliar",
-        "dosis": "5-10 kg/ha atau semprot foliar 0.1-0.2%",
-        "metode": "Aplikasi foliar saat pembungaan",
-        "waktu_aplikasi": "Saat muncul bunga pertama dan ulangi setiap minggu"
+        "diagnosis": "Defisiensi Fosfor Lanjut",
+        "severity": "Tinggi",
+        "pupuk": "TSP/Super Phosphate",
+        "dosis": "150 kg/ha",
+        "dosis_per_tanaman": "5 gram/tanaman",
+        "metode": "Tabur, lalu tutup tanah tipis",
+        "waktu_aplikasi": "Fase vegetatif",
+        "precaution": "Jangan aplikasikan saat hujan"
       },
-      "CF": 0.87,
-      "explanation": "Boron krusial untuk pembungaan dan pembuahan. Bunga rontok adalah indikator defisiensi B.",
-      "literatur": "Boron Role in Flowering 2023"
+      "CF": 0.8,
+      "explanation": "Tanaman butuh P untuk perkembangan akar dan buah.",
+      "hash": "A6",
+      "confidence_level": "Tinggi"
     },
-    "R7": {
-      "IF": ["fase_generatif", "buah_kecil", "kualitas_rendah"],
+    "R007": {
+      "IF": [
+        "buah_deformasi",
+        "daun_menguning_di_tepi",
+        "tanaman_lemah"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Kalium (K) fase generatif",
-        "pupuk": "KNO3 (Kalium Nitrat)",
-        "dosis": "200-250 kg/ha atau 20-25 gram/tanaman",
-        "metode": "Aplikasi rutin setiap 2 minggu",
-        "waktu_aplikasi": "Sejak pembungaan hingga panen"
+        "diagnosis": "Kekurangan Kalium Parah",
+        "severity": "Tinggi",
+        "pupuk": "NPK, KCl ekstra",
+        "dosis": "200 kg/ha",
+        "dosis_per_tanaman": "8 gram/tanaman",
+        "metode": "Tabur/kocor",
+        "waktu_aplikasi": "Fase generatif",
+        "precaution": "Berikan secara bertahap"
       },
-      "CF": 0.90,
-      "explanation": "Kalium sangat penting untuk ukuran dan kualitas buah. Defisiensi K pada fase generatif menurunkan hasil panen.",
-      "literatur": "Potassium in Fruit Quality 2022"
+      "CF": 0.9,
+      "explanation": "Kurang K menurunkan ketahanan dan kualitas buah.",
+      "hash": "A7",
+      "confidence_level": "Sangat Tinggi"
     },
-    "R8": {
-      "IF": ["fase_generatif", "ujung_buah_busuk", "bercak_hitam_ujung_buah"],
+    "R008": {
+      "IF": [
+        "pertumbuhan_akar_terhambat",
+        "daun_tua_kuning_merata"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Kalsium (Ca) - Blossom End Rot",
-        "pupuk": "Ca(NO3)2 atau Kalsium foliar",
-        "dosis": "Semprot foliar 0.3-0.5% setiap minggu",
-        "metode": "Aplikasi foliar rutin + perbaikan drainase",
-        "waktu_aplikasi": "Mulai fase bunga hingga buah muda terbentuk"
+        "diagnosis": "Defisiensi Fosfor Sedang",
+        "severity": "Sedang",
+        "pupuk": "SP-36",
+        "dosis": "75 kg/ha",
+        "dosis_per_tanaman": "2-3 gram/tanaman",
+        "metode": "Tabur",
+        "waktu_aplikasi": "Awal tanam",
+        "precaution": "Campur tanah sebelum tanam"
       },
-      "CF": 0.92,
-      "explanation": "Kalsium penting untuk struktur dinding sel. Blossom end rot adalah gejala khas defisiensi Ca.",
-      "literatur": "Calcium Nutrition and BER 2023"
+      "CF": 0.7,
+      "explanation": "Gejala kekurangan P paling jelas pada akar.",
+      "hash": "A8",
+      "confidence_level": "Tinggi"
     },
-    "R9": {
-      "IF": ["fase_generatif", "daun_pucat_kekuningan", "produksi_menurun"],
+    "R009": {
+      "IF": [
+        "daun_muda_keriting",
+        "pertumbuhan_lambat",
+        "buah_kecil"
+      ],
       "THEN": {
         "diagnosis": "Kekurangan Magnesium (Mg)",
-        "pupuk": "Kieserite atau MgSO4",
-        "dosis": "50-75 kg/ha atau semprot foliar 1-2%",
-        "metode": "Aplikasi soil atau foliar",
-        "waktu_aplikasi": "Setiap 3 minggu selama masa produksi"
+        "severity": "Sedang",
+        "pupuk": "Kieserit",
+        "dosis": "50-80 kg/ha",
+        "dosis_per_tanaman": "2-3 gram/tanaman",
+        "metode": "Tabur di permukaan tanah",
+        "waktu_aplikasi": "Fase generatif awal",
+        "precaution": "Jangan over-aplikasi"
       },
-      "CF": 0.84,
-      "explanation": "Magnesium adalah komponen klorofil. Defisiensi Mg menurunkan fotosintesis dan produktivitas.",
-      "literatur": "Magnesium Role in Photosynthesis 2022"
+      "CF": 0.6,
+      "explanation": "Mg penting untuk pertumbuhan daun muda dan pembentukan buah.",
+      "hash": "A9",
+      "confidence_level": "Sedang"
     },
-    "R10": {
-      "IF": ["fase_generatif", "warna_buah_pucat", "pematangan_tidak_merata"],
+    "R010": {
+      "IF": [
+        "daun_hijau_muda",
+        "ruas_batang_pendek",
+        "pertumbuhan_lambat"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan Nitrogen (N) fase generatif",
-        "pupuk": "Urea + KNO3",
-        "dosis": "100-150 kg/ha Urea + 150 kg/ha KNO3",
-        "metode": "Aplikasi seimbang N:K = 1:1.5",
-        "waktu_aplikasi": "Setiap 2 minggu selama masa panen"
+        "diagnosis": "Kekurangan Kalsium (Ca)",
+        "severity": "Sedang",
+        "pupuk": "Kalsit/dolomit",
+        "dosis": "100-150 kg/ha",
+        "dosis_per_tanaman": "5 gram/tanaman",
+        "metode": "Taburkan pada tanah sebelum tanam",
+        "waktu_aplikasi": "Pra-tanam",
+        "precaution": "Campur rata pada lapisan atas tanah"
       },
-      "CF": 0.86,
-      "explanation": "Nitrogen tetap dibutuhkan fase generatif untuk kualitas buah. Balans dengan K untuk hasil optimal.",
-      "literatur": "Balanced Fertilization in Productive Phase 2023"
+      "CF": 0.6,
+      "explanation": "Ca diperlukan untuk sel dan struktur tanaman.",
+      "hash": "A10",
+      "confidence_level": "Sedang"
     },
-    "R11": {
-      "IF": ["daun_kuning_merata", "tepi_daun_kecoklatan", "pertumbuhan_lambat"],
+    "R011": {
+      "IF": [
+        "fasetidaknormal",
+        "daun_menguning",
+        "buah_gagal_matang"
+      ],
       "THEN": {
-        "diagnosis": "Kekurangan NPK Kombinasi",
-        "pupuk": "NPK Majemuk 16-16-16 atau 15-15-15",
-        "dosis": "300-400 kg/ha atau 30-40 gram/tanaman",
-        "metode": "Aplikasi berkala setiap 3 minggu",
-        "waktu_aplikasi": "Sejak 2 MST hingga masa produksi"
+        "diagnosis": "Overdosis Pupuk Kimia",
+        "severity": "Tinggi",
+        "pupuk": "Kurangi aplikasi pupuk kimia",
+        "dosis": "-",
+        "dosis_per_tanaman": "-",
+        "metode": "Flush tanah dengan air bersih",
+        "waktu_aplikasi": "Jika gejala muncul",
+        "precaution": "Perbanyak pupuk organik"
       },
-      "CF": 0.88,
-      "explanation": "Gejala menunjukkan kekurangan multiple nutrisi. Pupuk majemuk memberikan solusi balanced.",
-      "literatur": "Compound Fertilizer Application 2023"
+      "CF": 0.8,
+      "explanation": "Terlalu banyak pupuk memicu keracunan dan gagal panen.",
+      "hash": "A11",
+      "confidence_level": "Tinggi"
     },
-    "R12": {
-      "IF": ["fase_vegetatif", "tanah_pH_rendah", "daun_muda_kuning"],
+    "R012": {
+      "IF": [
+        "akar_busuk",
+        "tanah_keras",
+        "buah_sedikit"
+      ],
       "THEN": {
-        "diagnosis": "pH Tanah Rendah + Defisiensi Mikronutrien",
-        "pupuk": "Dolomit + Mikronutrien Chelated",
-        "dosis": "1-2 ton/ha Dolomit + 10 kg/ha mikronutrien",
-        "metode": "Aplikasi dolomit 2 minggu sebelum tanam + foliar mikronutrien",
-        "waktu_aplikasi": "Pengapuran saat olah tanah, mikronutrien saat vegetatif"
+        "diagnosis": "Overdosis Pupuk Nitrogen",
+        "severity": "Tinggi",
+        "pupuk": "Hentikan Urea, beri kompos",
+        "dosis": "-",
+        "dosis_per_tanaman": "-",
+        "metode": "Berikan air mengalir",
+        "waktu_aplikasi": "-",
+        "precaution": "Pantau kondisi akar"
       },
-      "CF": 0.81,
-      "explanation": "pH rendah menghambat ketersediaan nutrisi. Pengapuran diperlukan untuk optimasi serapan hara.",
-      "literatur": "Soil pH Management 2022"
+      "CF": 0.8,
+      "explanation": "Akar sulit menyerap nutrisi jika tanah jenuh pupuk.",
+      "hash": "A12",
+      "confidence_level": "Tinggi"
+    },
+    "R013": {
+      "IF": [
+        "daun_gugur_sebelum_tua",
+        "bercak_coklat_buah"
+      ],
+      "THEN": {
+        "diagnosis": "Bercak antraknosa (jamur)",
+        "severity": "Sedang",
+        "pupuk": "Perbaiki drainase, tambah Zn dan Ca",
+        "dosis": "Komposisi organik ditingkatkan",
+        "dosis_per_tanaman": "-",
+        "metode": "Semprot fungisida organik",
+        "waktu_aplikasi": "Gejala awal muncul",
+        "precaution": "Sanitasi kebun"
+      },
+      "CF": 0.7,
+      "explanation": "Penyakit jamur berkembang saat kelembapan tinggi.",
+      "hash": "A13",
+      "confidence_level": "Tinggi"
+    },
+    "R014": {
+      "IF": [
+        "daun_keriput",
+        "tangkai_buah_gugur_cepat"
+      ],
+      "THEN": {
+        "diagnosis": "Serangan Virus Kuning",
+        "severity": "Tinggi",
+        "pupuk": "Tambahkan Kalium dan Fosfor",
+        "dosis": "Dosis sesuai rekomendasi",
+        "dosis_per_tanaman": "-",
+        "metode": "Pangkas bagian terkena",
+        "waktu_aplikasi": "Langsung setelah gejala",
+        "precaution": "Kontrol vektor serangga"
+      },
+      "CF": 0.8,
+      "explanation": "Virus kuning menyebabkan abortus buah dan daun menggulung.",
+      "hash": "A14",
+      "confidence_level": "Tinggi"
+    },
+    "R015": {
+      "IF": [
+        "layu_bakteri",
+        "akar_layu",
+        "daun_layu_permanen"
+      ],
+      "THEN": {
+        "diagnosis": "Layu Bakteri",
+        "severity": "Sangat Tinggi",
+        "pupuk": "Hentikan pupuk nitrogen, fokus kompos dan kapur",
+        "dosis": "-",
+        "dosis_per_tanaman": "-",
+        "metode": "Cabut tanaman sakit, solarisasi tanah",
+        "waktu_aplikasi": "Gejala awal",
+        "precaution": "Bakar atau musnahkan tanaman sakit"
+      },
+      "CF": 1.0,
+      "explanation": "Layu bakteri mematikan cepat, perlu sanitasi segera.",
+      "hash": "A15",
+      "confidence_level": "Sangat Tinggi"
+    },
+    "R016": {
+      "IF": [
+        "daun_atas_keriting",
+        "pertumbuhan_batang_menggulung"
+      ],
+      "THEN": {
+        "diagnosis": "Keracunan Herbisida",
+        "severity": "Tinggi",
+        "pupuk": "Flush tanah, kompos lebih banyak",
+        "dosis": "-",
+        "dosis_per_tanaman": "-",
+        "metode": "Siram banyak air",
+        "waktu_aplikasi": "Setelah aplikasi herbisida berlebihan",
+        "precaution": "Hindari penggunaan herbisida kimia"
+      },
+      "CF": 0.8,
+      "explanation": "Gejala fisik akibat dosis kimia/gulma berlebihan.",
+      "hash": "A16",
+      "confidence_level": "Tinggi"
+    },
+    "R017": {
+      "IF": [
+        "tanaman_kriting_daun",
+        "tanaman_merana_tidak_berbuah"
+      ],
+      "THEN": {
+        "diagnosis": "Defisiensi Cu (Tembaga)",
+        "severity": "Sedang",
+        "pupuk": "Pupuk mikro Cu",
+        "dosis": "10-15 kg/ha",
+        "dosis_per_tanaman": "",
+        "metode": "Larutkan dalam air",
+        "waktu_aplikasi": "Awal vegetatif",
+        "precaution": "Dosis jangan berlebihan"
+      },
+      "CF": 0.7,
+      "explanation": "Cu dibutuhkan untuk pembentukan enzim dan kesehatan jaringan.",
+      "hash": "A17",
+      "confidence_level": "Tinggi"
+    },
+    "R018": {
+      "IF": [
+        "tanaman_merana",
+        "daun_tua_berubah_merah"
+      ],
+      "THEN": {
+        "diagnosis": "Defisiensi Boron (B)",
+        "severity": "Sedang",
+        "pupuk": "Pupuk Borat",
+        "dosis": "2-3 kg/ha",
+        "dosis_per_tanaman": "",
+        "metode": "Semprotkan larutan borat",
+        "waktu_aplikasi": "2 minggu setelah tanam",
+        "precaution": "Jangan sampai overdosis"
+      },
+      "CF": 0.6,
+      "explanation": "Boron penting untuk proses pembentukkan buah dan akar.",
+      "hash": "A18",
+      "confidence_level": "Sedang"
+    },
+    "R019": {
+      "IF": [
+        "buah_gugur_muda",
+        "tangkai_buah_layu"
+      ],
+      "THEN": {
+        "diagnosis": "Kekurangan unsur mikro Zn",
+        "severity": "Sedang",
+        "pupuk": "Pupuk mikro Zn",
+        "dosis": "10-15 kg/ha",
+        "dosis_per_tanaman": "",
+        "metode": "Tabur mikro secara merata",
+        "waktu_aplikasi": "Awal generatif",
+        "precaution": "Campurkan ke tanah lembab"
+      },
+      "CF": 0.7,
+      "explanation": "Zn mendukung bunga, mencegah gugur muda.",
+      "hash": "A19",
+      "confidence_level": "Tinggi"
+    },
+    "R020": {
+      "IF": [
+        "buah_mengkerut",
+        "daun_tua_berbercak_coklat"
+      ],
+      "THEN": {
+        "diagnosis": "Infeksi patogen jamur",
+        "severity": "Tinggi",
+        "pupuk": "Fokus organik, kurangi N, tambah K",
+        "dosis": "-",
+        "dosis_per_tanaman": "-",
+        "metode": "Fungisida organik, sanitasi",
+        "waktu_aplikasi": "Awal gejala",
+        "precaution": "Perbaiki drainase dan lingkungan"
+      },
+      "CF": 0.85,
+      "explanation": "Jamur patogen menyebabkan bercak dan gagal buah.",
+      "hash": "A20",
+      "confidence_level": "Sangat Tinggi"
     }
+  },
+  "rule_metadata": {
+    "R001": {
+      "created_at": "...",
+      "updated_at": "...",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0,
+      "tags": [
+        "nitrogen",
+        "vegetatif",
+        "klorosis"
+      ]
+    },
+    "R002": {
+      "created_at": "...",
+      "updated_at": "...",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0,
+      "tags": [
+        "fosfor",
+        "vegetatif",
+        "ungu"
+      ]
+    },
+    "R003": {
+      "created_at": "...",
+      "updated_at": "...",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0,
+      "tags": [
+        "kalium",
+        "buah"
+      ]
+    },
+    "R004": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R005": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R006": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R007": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R008": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R009": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R010": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R011": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R012": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R013": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R014": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R015": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R016": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R017": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R018": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R019": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    },
+    "R020": {
+      "created_at": "2025-10-24T15:45:17.661178",
+      "updated_at": "2025-10-24T15:45:17.661178",
+      "author": "Expert System",
+      "version": "1.0",
+      "status": "active",
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": []
+    }
+  },
+  "rule_history": {
+    "R001": [
+      {
+        "action": "created",
+        "timestamp": "...",
+        "author": "Expert System",
+        "version": "1.0"
+      }
+    ],
+    "R002": [
+      {
+        "action": "created",
+        "timestamp": "...",
+        "author": "Expert System",
+        "version": "1.0"
+      }
+    ]
+  },
+  "rule_dependencies": {
+    "R001": [],
+    "R002": [],
+    "R003": []
   },
   "nutrient_database": {
     "N": {
       "name": "Nitrogen",
       "symbol": "N",
-      "fungsi_utama": "Pertumbuhan vegetatif, pembentukan klorofil, sintesis protein",
-      "mobilitas": "Mobile",
-      "gejala_defisiensi": "Daun kuning merata dimulai dari daun tua",
-      "gejala_kelebihan": "Pertumbuhan vegetatif berlebihan, rentan penyakit"
+      "role": "Pertumbuhan vegetatif dan pembentukan klorofil",
+      "deficiency_symptoms": [
+        "Daun menguning merata (klorosis)",
+        "Pertumbuhan terhambat",
+        "Tanaman kerdil",
+        "Daun tua menguning lebih dulu"
+      ],
+      "excess_symptoms": [
+        "Pertumbuhan vegetatif berlebihan",
+        "Daun sangat hijau gelap",
+        "Rentan terhadap hama dan penyakit",
+        "Pembungaan tertunda"
+      ],
+      "sources": [
+        "Urea",
+        "ZA",
+        "NPK"
+      ],
+      "mobility": "Mobile"
     },
     "P": {
       "name": "Fosfor",
       "symbol": "P",
-      "fungsi_utama": "Perkembangan akar, pembungaan, transfer energi (ATP)",
-      "mobilitas": "Mobile",
-      "gejala_defisiensi": "Daun tua keunguan, pertumbuhan akar terhambat",
-      "gejala_kelebihan": "Defisiensi Zn dan Fe terinduksi"
+      "role": "Pembentukan akar, bunga, dan buah",
+      "deficiency_symptoms": [
+        "Daun tua keunguan atau kemerahan",
+        "Pertumbuhan akar terhambat",
+        "Pembungaan tertunda",
+        "Ukuran buah kecil"
+      ],
+      "excess_symptoms": [
+        "Defisiensi unsur mikro (Zn, Fe)",
+        "Daun menguning"
+      ],
+      "sources": [
+        "SP-36",
+        "TSP",
+        "NPK"
+      ],
+      "mobility": "Mobile"
     },
     "K": {
       "name": "Kalium",
       "symbol": "K",
-      "fungsi_utama": "Kualitas buah, ketahanan penyakit, regulasi stomata",
-      "mobilitas": "Mobile",
-      "gejala_defisiensi": "Tepi daun kecoklatan dan menggulung",
-      "gejala_kelebihan": "Defisiensi Mg dan Ca terinduksi"
-    },
-    "Ca": {
-      "name": "Kalsium",
-      "symbol": "Ca",
-      "fungsi_utama": "Struktur dinding sel, pemanjangan sel, kualitas buah",
-      "mobilitas": "Immobile",
-      "gejala_defisiensi": "Ujung buah busuk (BER), daun muda keriput",
-      "gejala_kelebihan": "Jarang terjadi, dapat induksi defisiensi Mg"
-    },
-    "Mg": {
-      "name": "Magnesium",
-      "symbol": "Mg",
-      "fungsi_utama": "Komponen klorofil, aktivator enzim, fotosintesis",
-      "mobilitas": "Mobile",
-      "gejala_defisiensi": "Klorosis interveinal pada daun tua",
-      "gejala_kelebihan": "Antagonis dengan Ca dan K"
-    },
-    "Fe": {
-      "name": "Besi",
-      "symbol": "Fe",
-      "fungsi_utama": "Pembentukan klorofil, respirasi, metabolisme nitrogen",
-      "mobilitas": "Immobile",
-      "gejala_defisiensi": "Klorosis interveinal pada daun muda",
-      "gejala_kelebihan": "Bronzing pada daun"
-    },
-    "Zn": {
-      "name": "Zinc",
-      "symbol": "Zn",
-      "fungsi_utama": "Sintesis hormon IAA, pertumbuhan, pembentukan klorofil",
-      "mobilitas": "Immobile",
-      "gejala_defisiensi": "Pertumbuhan kerdil, ruas pendek, daun kecil",
-      "gejala_kelebihan": "Klorosis Fe terinduksi"
-    },
-    "B": {
-      "name": "Boron",
-      "symbol": "B",
-      "fungsi_utama": "Pembungaan, pembuahan, transport karbohidrat",
-      "mobilitas": "Immobile",
-      "gejala_defisiensi": "Bunga rontok, titik tumbuh mati, buah deformasi",
-      "gejala_kelebihan": "Nekrosis tepi daun"
+      "role": "Kualitas buah, ketahanan terhadap penyakit",
+      "deficiency_symptoms": [
+        "Tepi daun terbakar (necrosis)",
+        "Daun tua menguning di tepi",
+        "Buah kecil dan tidak berkualitas",
+        "Tanaman lemah"
+      ],
+      "excess_symptoms": [
+        "Defisiensi Mg dan Ca",
+        "Pertumbuhan terhambat"
+      ],
+      "sources": [
+        "KCl",
+        "KNO3",
+        "NPK"
+      ],
+      "mobility": "Mobile"
     }
   },
   "growth_phases": {
-    "vegetatif": {
-      "periode": "0-60 HST",
-      "karakteristik": "Pertumbuhan daun dan batang",
-      "nutrisi_kritis": ["N", "P", "K"],
-      "rasio_npk": "3:1:2",
-      "frekuensi_pemupukan": "Setiap 2 minggu"
+    "vegetatif_awal": {
+      "duration": "0-21 hari",
+      "focus": "Akar",
+      "key_nutrients": [
+        "N",
+        "P"
+      ],
+      "ratio_npk": "1:2:1"
     },
-    "generatif": {
-      "periode": ">60 HST",
-      "karakteristik": "Pembungaan dan pembuahan",
-      "nutrisi_kritis": ["K", "Ca", "B", "N"],
-      "rasio_npk": "1:1:2",
-      "frekuensi_pemupukan": "Setiap 1-2 minggu"
+    "vegetatif_lanjut": {
+      "duration": "22-42 hari",
+      "focus": "Batang. Daun",
+      "key_nutrients": [
+        "N"
+      ],
+      "ratio_npk": "2:1:1"
+    },
+    "generatif_awal": {
+      "duration": "43-70 hari",
+      "focus": "Bunga",
+      "key_nutrients": [
+        "P",
+        "K"
+      ],
+      "ratio_npk": "1:2:2"
+    },
+    "generatif_lanjut": {
+      "duration": "71-120 hari",
+      "focus": "Buah",
+      "key_nutrients": [
+        "K",
+        "P"
+      ],
+      "ratio_npk": "1:1:3"
     }
+  },
+  "fuzzy_sets": {
+    "pertumbuhan": {
+      "lambat": {
+        "min": 0,
+        "max": 30,
+        "peak": 20
+      },
+      "normal": {
+        "min": 25,
+        "max": 60,
+        "peak": 45
+      },
+      "cepat": {
+        "min": 55,
+        "max": 100,
+        "peak": 80
+      }
+    },
+    "warna_daun": {
+      "sangat_kuning": {
+        "value": 10
+      },
+      "kuning": {
+        "value": 30
+      },
+      "hijau_muda": {
+        "value": 60
+      },
+      "hijau_normal": {
+        "value": 80
+      },
+      "hijau_gelap": {
+        "value": 95
+      }
+    }
+  },
+  "analytics": {
+    "total_rules": 20,
+    "active_rules": 20,
+    "total_usage": 0,
+    "average_success_rate": 0,
+    "most_used_rules": [],
+    "last_updated": "2025-10-24T14:00:00"
   }
 }

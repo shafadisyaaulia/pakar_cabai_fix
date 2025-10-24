@@ -6,7 +6,6 @@ Menjawab pertanyaan WHY dan HOW
 
 from typing import Dict, List, Any, Optional
 
-
 class ExplanationFacility:
     """
     Class untuk explanation facility sistem pakar
@@ -18,7 +17,7 @@ class ExplanationFacility:
         Inisialisasi Explanation Facility
         
         Args:
-            knowledge_base: Instance KnowledgeBase
+            knowledge_base: Instance AdvancedKnowledgeBase
             inference_engine: Instance InferenceEngine
         """
         self.kb = knowledge_base
@@ -38,11 +37,9 @@ class ExplanationFacility:
         """
         current_facts = context.get('current_facts', [])
         
-        # Cari rules yang memerlukan kondisi ini
         relevant_rules = []
         for rule_id, rule in self.kb.get_all_rules().items():
             if question in rule['IF']:
-                # Check kondisi lain yang sudah terpenuhi
                 satisfied = [cond for cond in rule['IF'] if cond in current_facts]
                 missing = [cond for cond in rule['IF'] if cond not in current_facts]
                 
@@ -63,7 +60,6 @@ class ExplanationFacility:
                 'relevant_rules': []
             }
         
-        # Sort berdasarkan jumlah kondisi yang sudah terpenuhi
         relevant_rules.sort(key=lambda x: len(x['satisfied_conditions']), reverse=True)
         
         explanation = {
@@ -78,7 +74,6 @@ class ExplanationFacility:
         return explanation
     
     def _generate_why_explanation(self, question: str, relevant_rules: List[Dict]) -> str:
-        """Generate natural language explanation for WHY"""
         if len(relevant_rules) == 0:
             return f"Sistem tidak memerlukan informasi tentang '{question}' untuk diagnosis saat ini."
         
@@ -102,17 +97,6 @@ class ExplanationFacility:
         return explanation
     
     def explain_how(self, conclusion: str, reasoning_path: List[Dict]) -> Dict[str, Any]:
-        """
-        Menjelaskan BAGAIMANA sistem sampai pada kesimpulan tertentu
-        
-        Args:
-            conclusion: Kesimpulan/diagnosis yang ingin dijelaskan
-            reasoning_path: Path reasoning dari inference engine
-            
-        Returns:
-            Dictionary penjelasan HOW
-        """
-        # Filter reasoning path untuk kesimpulan ini
         relevant_steps = [
             step for step in reasoning_path 
             if conclusion.lower() in step['conclusion'].lower()
@@ -137,13 +121,12 @@ class ExplanationFacility:
         return explanation
     
     def _generate_how_explanation(self, conclusion: str, steps: List[Dict]) -> str:
-        """Generate natural language explanation for HOW"""
         if len(steps) == 0:
             return f"Sistem tidak dapat menemukan kesimpulan '{conclusion}'."
         
         explanation = f"Sistem sampai pada kesimpulan '{conclusion}' melalui langkah berikut:\n\n"
         
-        for i, step in enumerate(steps, 1):
+        for step in steps:
             explanation += f"Langkah {step['step']}:\n"
             explanation += f"  - Menggunakan Rule {step['rule']}\n"
             explanation += f"  - Kondisi yang terpenuhi: {', '.join(step['conditions'])}\n"
@@ -165,7 +148,6 @@ class ExplanationFacility:
         return explanation
     
     def _format_reasoning_steps(self, steps: List[Dict]) -> List[Dict]:
-        """Format reasoning steps untuk output yang lebih readable"""
         formatted = []
         
         for step in steps:
@@ -187,15 +169,6 @@ class ExplanationFacility:
         return formatted
     
     def explain_rule(self, rule_id: str) -> Dict[str, Any]:
-        """
-        Menjelaskan detail suatu rule
-        
-        Args:
-            rule_id: ID rule yang ingin dijelaskan
-            
-        Returns:
-            Dictionary penjelasan rule
-        """
         rule = self.kb.get_rule(rule_id)
         
         if not rule:
@@ -221,7 +194,6 @@ class ExplanationFacility:
             'recommendation_details': rule['THEN']
         }
         
-        # Validasi rule
         validation = self.kb.validate_rule(rule_id)
         explanation['validation'] = validation
         
@@ -229,7 +201,6 @@ class ExplanationFacility:
         return explanation
     
     def _rule_to_natural_language(self, rule_id: str, rule: Dict) -> str:
-        """Convert rule structure to natural language"""
         nl = f"Rule {rule_id} menyatakan bahwa:\n\n"
         nl += "JIKA:\n"
         for i, condition in enumerate(rule['IF'], 1):
@@ -244,7 +215,6 @@ class ExplanationFacility:
         return nl
     
     def _interpret_rule_cf(self, cf: float) -> str:
-        """Interpret rule CF"""
         if cf >= 0.9:
             return "Sangat tinggi - Rule ini memiliki dasar yang sangat kuat"
         elif cf >= 0.8:
@@ -257,22 +227,12 @@ class ExplanationFacility:
             return "Rendah - Rule ini memerlukan validasi tambahan"
     
     def explain_comparison(self, diagnoses: List[Dict]) -> Dict[str, Any]:
-        """
-        Menjelaskan perbandingan antara multiple diagnoses
-        
-        Args:
-            diagnoses: List diagnosis results dari inference engine
-            
-        Returns:
-            Dictionary penjelasan perbandingan
-        """
         if len(diagnoses) < 2:
             return {
                 'message': 'Memerlukan minimal 2 diagnosis untuk perbandingan',
                 'diagnoses_count': len(diagnoses)
             }
         
-        # Sort by CF
         sorted_diagnoses = sorted(diagnoses, key=lambda x: x['cf'], reverse=True)
         
         comparison = {
@@ -283,7 +243,6 @@ class ExplanationFacility:
             'summary': self._generate_comparison_summary(sorted_diagnoses)
         }
         
-        # Compare top diagnosis with others
         top = sorted_diagnoses[0]
         for other in sorted_diagnoses[1:]:
             diff = {
@@ -298,7 +257,6 @@ class ExplanationFacility:
         return comparison
     
     def _generate_comparison_summary(self, diagnoses: List[Dict]) -> str:
-        """Generate summary for diagnosis comparison"""
         if not diagnoses:
             return "Tidak ada diagnosis untuk dibandingkan."
         
@@ -323,7 +281,6 @@ class ExplanationFacility:
         return summary
     
     def _compare_rules(self, rule_id1: str, rule_id2: str) -> Dict[str, Any]:
-        """Compare two rules"""
         rule1 = self.kb.get_rule(rule_id1)
         rule2 = self.kb.get_rule(rule_id2)
         
@@ -341,7 +298,6 @@ class ExplanationFacility:
         }
     
     def _add_to_history(self, explanation_type: str, explanation: Dict):
-        """Add explanation to history"""
         self.explanation_history.append({
             'type': explanation_type,
             'timestamp': self._get_timestamp(),
@@ -349,33 +305,20 @@ class ExplanationFacility:
         })
     
     def _get_timestamp(self) -> str:
-        """Get current timestamp"""
         from datetime import datetime
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     def get_explanation_history(self) -> List[Dict]:
-        """Get all explanation history"""
         return self.explanation_history
     
     def clear_history(self):
-        """Clear explanation history"""
         self.explanation_history = []
     
     def generate_full_report(self, consultation_result: Dict) -> str:
-        """
-        Generate comprehensive explanation report
-        
-        Args:
-            consultation_result: Full result dari consultation
-            
-        Returns:
-            String report lengkap
-        """
         report = "="*70 + "\n"
         report += "LAPORAN PENJELASAN SISTEM PAKAR PUPUK CABAI\n"
         report += "="*70 + "\n\n"
         
-        # Input summary
         report += "1. FAKTA INPUT\n"
         report += "-"*70 + "\n"
         facts = consultation_result.get('facts', [])
@@ -383,7 +326,6 @@ class ExplanationFacility:
             report += f"   {i}. {fact}\n"
         report += "\n"
         
-        # Diagnosis results
         report += "2. HASIL DIAGNOSIS\n"
         report += "-"*70 + "\n"
         conclusions = consultation_result.get('conclusions', [])
@@ -394,7 +336,6 @@ class ExplanationFacility:
             report += f"      Dosis: {conclusion['recommendation']['dosis']}\n"
             report += f"      Metode: {conclusion['recommendation']['metode']}\n\n"
         
-        # Reasoning path
         report += "3. ALUR PENALARAN\n"
         report += "-"*70 + "\n"
         reasoning_path = consultation_result.get('reasoning_path', [])
@@ -404,7 +345,6 @@ class ExplanationFacility:
             report += f"   THEN: {step['conclusion']}\n"
             report += f"   CF: {step['cf']*100:.1f}%\n\n"
         
-        # Rules used
         report += "4. RULES YANG DIGUNAKAN\n"
         report += "-"*70 + "\n"
         used_rules = consultation_result.get('used_rules', [])
@@ -416,36 +356,3 @@ class ExplanationFacility:
         report += "="*70 + "\n"
         
         return report
-
-
-# Example usage
-if __name__ == "__main__":
-    from modules.knowledge_base import KnowledgeBase
-    from modules.inference_engine import InferenceEngine
-    
-    # Initialize
-    kb = KnowledgeBase('rules.json')
-    engine = InferenceEngine(kb)
-    explainer = ExplanationFacility(kb, engine)
-    
-    print("="*70)
-    print("TESTING EXPLANATION FACILITY")
-    print("="*70)
-    
-    # Test WHY explanation
-    print("\n### TEST 1: WHY Explanation ###")
-    context = {
-        'current_facts': ['fase_vegetatif', 'daun_kuning_merata']
-    }
-    why_explain = explainer.explain_why('pertumbuhan_lambat', context)
-    print(why_explain['answer'])
-    
-    # Test Rule explanation
-    print("\n### TEST 2: Rule Explanation ###")
-    rule_explain = explainer.explain_rule('R1')
-    print(rule_explain['natural_language'])
-    print(f"\nCF Interpretation: {rule_explain['certainty_factor']['interpretation']}")
-    
-    print("\n" + "="*70)
-    print("EXPLANATION TESTS COMPLETED")
-    print("="*70)

@@ -1,45 +1,46 @@
-import React, { useState } from 'react';
-import { Leaf, Sprout, FlaskConical, BookOpen, BarChart3, Info, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Leaf, Sprout, FlaskConical, BookOpen, BarChart3, Info, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { fetchSymptoms, diagnose, fetchRules, deleteRule, updateRule } from './api/api.js';
+import toast, { Toaster } from 'react-hot-toast';
+
+const itemsPerPage = 5;
 
 const ExpertSystemUI = () => {
   const [activeMenu, setActiveMenu] = useState('home');
   const [selectedSymptoms, setSelectedSymptoms] = useState({});
   const [selectedPhase, setSelectedPhase] = useState({ vegetatif: false, generatif: false });
   const [diagnosisResult, setDiagnosisResult] = useState(null);
+  const [symptomCategories, setSymptomCategories] = useState({});
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [openCategory, setOpenCategory] = useState(null);
+  const [editingRule, setEditingRule] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Symptom categories
-  const symptomCategories = {
-    'Gejala Daun': [
-      'daun_kuning_merata',
-      'daun_muda_kuning',
-      'daun_tua_kuning',
-      'tepi_daun_kuning_kecoklatan',
-      'daun_menggulung',
-      'tulang_daun_ungu',
-      'tulang_daun_hijau',
-      'daun_pucat_kekuningan'
-    ],
-    'Gejala Pertumbuhan': [
-      'pertumbuhan_lambat',
-      'pertumbuhan_kerdil',
-      'ruas_batang_pendek',
-      'pertumbuhan_abnormal'
-    ],
-    'Gejala Bunga & Buah': [
-      'bunga_rontok',
-      'pembentukan_buah_sedikit',
-      'buah_kecil',
-      'ujung_buah_busuk',
-      'bercak_hitam_ujung_buah',
-      'warna_buah_pucat',
-      'pematangan_tidak_merata'
-    ],
-    'Kondisi Lain': [
-      'kualitas_rendah',
-      'produksi_menurun',
-      'tanah_pH_rendah'
-    ]
-  };
+
+
+  // Load symptoms and rules on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [symptomsData, rulesData] = await Promise.all([
+          fetchSymptoms(),
+          fetchRules()
+        ]);
+        setSymptomCategories(symptomsData);
+        setRules(rulesData);
+      } catch (err) {
+        setError('Failed to load data from server');
+        console.error('Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const formatSymptomName = (symptom) => {
     return symptom.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -64,31 +65,69 @@ const ExpertSystemUI = () => {
     }));
   };
 
-  const runDiagnosis = () => {
-    // Simulate diagnosis
-    const mockResult = {
-      conclusions: [
-        {
-          diagnosis: 'Kekurangan Nitrogen (N)',
-          cf: 0.85,
-          cf_interpretation: 'Sangat Meyakinkan',
-          recommendation: {
-            pupuk: 'Urea atau ZA',
-            dosis: '150-200 kg/ha atau 15-20 gram/tanaman',
-            metode: 'Aplikasi bertahap setiap 2 minggu'
-          },
-          explanation: 'Nitrogen sangat penting untuk pertumbuhan vegetatif. Daun kuning merata dan pertumbuhan lambat adalah indikator kuat kekurangan N.'
-        }
-      ]
-    };
-    setDiagnosisResult(mockResult);
-  };
+    const runDiagnosis = async () => {
+  // Ambil semua gejala yang dipilih
+  const facts = Object.keys(selectedSymptoms);
+  const user_cfs = { ...selectedSymptoms };
 
+  // Tambahkan fakta fase pertumbuhan (biar dikirim ke backend)
+  if (selectedPhase.vegetatif) {
+    facts.push("fase_vegetatif");
+    user_cfs["fase_vegetatif"] = 1.0;
+  }
+  if (selectedPhase.generatif) {
+    facts.push("fase_generatif");
+    user_cfs["fase_generatif"] = 1.0;
+  }
+
+  console.log("🔍 Data dikirim ke backend:", facts);
+
+  try {
+    setLoading(true);
+    const response = await diagnose(facts, user_cfs);
+    setDiagnosisResult(response);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   const resetConsultation = () => {
     setSelectedSymptoms({});
     setSelectedPhase({ vegetatif: false, generatif: false });
     setDiagnosisResult(null);
   };
+
+  // Pagination handlers
+  const paginatedRules = rules.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(rules.length / itemsPerPage);
+
+  const handleDeleteRule = async (ruleId) => {
+  try {
+    await deleteRule(ruleId);
+    setRules(prev => prev.filter(rule => rule.id !== ruleId));
+    toast.success(`✅ Rule ${ruleId} berhasil dihapus`);
+  } catch (err) {
+    toast.error(`❌ Gagal menghapus rule ${ruleId}`);
+    console.error(err);
+  }
+};
+
+
+  const handleUpdateRule = async (ruleId, updatedData) => {
+  try {
+    await updateRule(ruleId, updatedData);
+    toast.success(`✅ Rule ${ruleId} berhasil diperbarui!`);
+    // Refresh daftar rules agar data terbaru muncul
+    const refreshedRules = await fetchRules();
+    setRules(refreshedRules);
+  } catch (err) {
+    console.error("Update rule gagal:", err);
+    toast.error("❌ Gagal memperbarui rule.");
+  }
+};
+
+
 
   // Menu Components
   const HomePage = () => (
@@ -111,7 +150,7 @@ const ExpertSystemUI = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Rules', value: '12', icon: BookOpen, color: 'bg-blue-500' },
+          { label: 'Total Rules', value: rules.length.toString(), icon: BookOpen, color: 'bg-blue-500' },
           { label: 'Diagnosis Unik', value: '10', icon: FlaskConical, color: 'bg-green-500' },
           { label: 'Avg CF', value: '0.86', icon: BarChart3, color: 'bg-purple-500' },
           { label: 'Total Nutrisi', value: '8', icon: Sprout, color: 'bg-orange-500' }
@@ -144,109 +183,141 @@ const ExpertSystemUI = () => {
     </div>
   );
 
-  const ConsultationPage = () => (
+const ConsultationPage = () => {
+  const [openCategory, setOpenCategory] = useState(null);
+
+  // gunakan symptomCategories dari backend
+  const groupedSymptoms = symptomCategories;
+
+  return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">🔍 Konsultasi Pemupukan</h2>
+      <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8">
+        <h2 className="space-y-6">
+          🔍 Konsultasi Pemupukan
+        </h2>
 
-        {/* Phase Selection */}
+        {/* Step 1: Fase Pertumbuhan */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Step 1: Pilih Fase Pertumbuhan</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Step 1: Pilih Fase Pertumbuhan
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="relative cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedPhase.vegetatif}
-                onChange={(e) => setSelectedPhase(prev => ({ ...prev, vegetatif: e.target.checked }))}
-                className="peer sr-only"
-              />
-              <div className="bg-white border-2 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-xl p-6 transition-all hover:shadow-md">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full border-2 peer-checked:bg-green-500 peer-checked:border-green-500 mt-1 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Fase Vegetatif</div>
-                    <div className="text-sm text-gray-600">0-60 HST (Hari Setelah Tanam)</div>
-                  </div>
-                </div>
-              </div>
-            </label>
-            
-            <label className="relative cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedPhase.generatif}
-                onChange={(e) => setSelectedPhase(prev => ({ ...prev, generatif: e.target.checked }))}
-                className="peer sr-only"
-              />
-              <div className="bg-white border-2 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-xl p-6 transition-all hover:shadow-md">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full border-2 peer-checked:bg-green-500 peer-checked:border-green-500 mt-1 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Fase Generatif</div>
-                    <div className="text-sm text-gray-600">&gt;60 HST</div>
-                  </div>
-                </div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* Symptoms Selection */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Step 2: Pilih Gejala yang Terlihat</h3>
-          <div className="space-y-4">
-            {Object.entries(symptomCategories).map(([category, symptoms]) => (
-              <details key={category} className="group bg-gray-50 rounded-xl overflow-hidden">
-                <summary className="cursor-pointer p-4 font-medium text-gray-800 hover:bg-gray-100 transition-colors list-none flex items-center justify-between">
-                  <span>📋 {category}</span>
-                  <ChevronRight className="w-5 h-5 group-open:rotate-90 transition-transform" />
-                </summary>
-                <div className="p-4 space-y-3 bg-white">
-                  {symptoms.map(symptom => (
-                    <div key={symptom} className="flex items-center gap-3">
-                      <label className="flex-1 flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedSymptoms[symptom]}
-                          onChange={() => handleSymptomChange(symptom)}
-                          className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                        <span className="text-gray-700">{formatSymptomName(symptom)}</span>
-                      </label>
-                      {selectedSymptoms[symptom] !== undefined && (
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={selectedSymptoms[symptom]}
-                          onChange={(e) => handleCFChange(symptom, e.target.value)}
-                          className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                      )}
-                      {selectedSymptoms[symptom] !== undefined && (
-                        <span className="text-sm text-gray-600 w-12">{(selectedSymptoms[symptom] * 100).toFixed(0)}%</span>
-                      )}
+            {[
+              {
+                key: "vegetatif",
+                label: "Fase Vegetatif",
+                desc: "0-60 HST (Hari Setelah Tanam)",
+              },
+              {
+                key: "generatif",
+                label: "Fase Generatif",
+                desc: ">60 HST",
+              },
+            ].map((phase) => (
+              <label key={phase.key} className="relative cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedPhase[phase.key]}
+                  onChange={(e) =>
+                    setSelectedPhase((prev) => ({
+                      ...prev,
+                      [phase.key]: e.target.checked,
+                    }))
+                  }
+                  className="peer sr-only"
+                />
+                <div className="bg-white border-2 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-xl p-6 transition-all hover:shadow-md">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full border-2 peer-checked:bg-green-500 peer-checked:border-green-500 mt-1 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
                     </div>
-                  ))}
+                    <div>
+                      <div className="font-semibold text-gray-800">
+                        {phase.label}
+                      </div>
+                      <div className="text-sm text-gray-600">{phase.desc}</div>
+                    </div>
+                  </div>
                 </div>
-              </details>
+              </label>
             ))}
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Step 2: Pilih Gejala */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Step 2: Pilih Gejala yang Terlihat
+          </h3>
+          <div className="space-y-4">
+            {Object.entries(groupedSymptoms).map(([category, symptoms]) => (
+              <div
+                key={category}
+                className="border rounded-lg bg-white shadow-md overflow-hidden"
+              >
+                {/* Header kategori */}
+                <div
+                  onClick={() =>
+                    setOpenCategory(openCategory === category ? null : category)
+                  }
+                  className="cursor-pointer select-none text-lg font-semibold bg-green-100 p-3 rounded-t-lg hover:bg-green-200 transition-colors flex justify-between items-center"
+                >
+                  <span>{category}</span>
+                  <span className="text-gray-500">
+                    {openCategory === category ? "▲" : "▼"}
+                  </span>
+                </div>
+
+                {/* Isi gejala */}
+                {openCategory === category && (
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {symptoms.map((symptom) => (
+                      <label
+                        key={symptom}
+                        className="flex items-center gap-3 text-sm text-gray-700 bg-gray-50 border rounded-lg p-3 hover:bg-green-50 transition cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedSymptoms[symptom]}
+                          onChange={() =>
+                            setSelectedSymptoms((prev) => {
+                              const updated = { ...prev };
+                              if (updated[symptom]) {
+                                delete updated[symptom];
+                              } else {
+                                updated[symptom] = 0.8; // default CF
+                              }
+                              return updated;
+                            })
+                          }
+                          className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <span>
+                          {symptom.replace(/_/g, " ").replace(/\b\w/g, (c) =>
+                            c.toUpperCase()
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tombol Aksi */}
         <div className="flex gap-4">
           <button
             onClick={runDiagnosis}
-            disabled={Object.keys(selectedSymptoms).length === 0}
-            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-colors"
+            disabled={Object.keys(selectedSymptoms).length === 0 || loading}
+            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
           >
-            🧠 Diagnosis
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              "🧠 Diagnosis"
+            )}
           </button>
           <button
             onClick={resetConsultation}
@@ -255,108 +326,194 @@ const ExpertSystemUI = () => {
             🔄 Reset
           </button>
         </div>
+
+        {/* Pesan Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 mt-4">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium text-red-900">Error</div>
+              <div className="text-red-800 text-sm">{error}</div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Results */}
+      {/* Hasil Diagnosis */}
       {diagnosisResult && (
         <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
-          <div className="flex items-center gap-3 text-green-600">
-            <CheckCircle2 className="w-8 h-8" />
-            <h3 className="text-2xl font-bold">Diagnosis Selesai!</h3>
-          </div>
+          {diagnosisResult.conclusions?.length === 0 ? (
+            <p className="text-center text-gray-700 py-12">
+              Tidak ditemukan diagnosis berdasarkan gejala yang dipilih.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 text-green-600">
+                <CheckCircle2 className="w-8 h-8" />
+                <h3 className="text-2xl font-bold">Diagnosis Selesai!</h3>
+              </div>
 
-          {diagnosisResult.conclusions.map((conclusion, idx) => (
-            <div key={idx} className="border-l-4 border-green-500 bg-green-50 rounded-r-xl p-6">
-              <h4 className="text-xl font-bold text-gray-800 mb-4">{idx + 1}. {conclusion.diagnosis}</h4>
-              
-              <div className="mb-4">
-                <div className="text-sm text-gray-600 mb-1">Tingkat Kepercayaan</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div 
-                      className="bg-green-500 h-full rounded-full transition-all"
-                      style={{ width: `${conclusion.cf * 100}%` }}
-                    />
+              {diagnosisResult.conclusions?.map((conclusion, idx) => (
+                <div
+                  key={idx}
+                  className="border-l-4 border-green-500 bg-green-50 rounded-r-xl p-6"
+                >
+                  <h4 className="text-xl font-bold text-gray-800 mb-4">
+                    {idx + 1}. {conclusion.diagnosis}
+                  </h4>
+
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-1">
+                      Tingkat Kepercayaan
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-green-500 h-full rounded-full transition-all"
+                          style={{ width: `${conclusion.cf * 100}%` }}
+                        />
+                      </div>
+                      <span className="font-bold text-green-600">
+                        {(conclusion.cf * 100).toFixed(1)}%
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        ({conclusion.cf_interpretation})
+                      </span>
+                    </div>
                   </div>
-                  <span className="font-bold text-green-600">{(conclusion.cf * 100).toFixed(1)}%</span>
-                  <span className="text-sm text-gray-600">({conclusion.cf_interpretation})</span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="text-sm text-gray-600 mb-1">Pupuk</div>
-                  <div className="font-semibold text-gray-800">{conclusion.recommendation.pupuk}</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="text-sm text-gray-600 mb-1">Dosis</div>
-                  <div className="font-semibold text-gray-800">{conclusion.recommendation.dosis}</div>
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Pupuk</div>
+                      <div className="font-semibold text-gray-800">
+                        {conclusion.recommendation.pupuk}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">Dosis</div>
+                      <div className="font-semibold text-gray-800">
+                        {conclusion.recommendation.dosis}
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="text-sm text-gray-600 mb-1">Metode Aplikasi</div>
-                <div className="font-semibold text-gray-800">{conclusion.recommendation.metode}</div>
-              </div>
-
-              <details className="mt-4">
-                <summary className="cursor-pointer text-green-700 font-medium hover:text-green-800 list-none flex items-center gap-2">
-                  <span>📖 Penjelasan</span>
-                  <ChevronRight className="w-4 h-4" />
-                </summary>
-                <div className="mt-3 text-gray-700 leading-relaxed pl-6">
-                  {conclusion.explanation}
+                  <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="text-sm text-gray-600 mb-1">
+                      Metode Aplikasi
+                    </div>
+                    <div className="font-semibold text-gray-800">
+                      {conclusion.recommendation.metode}
+                    </div>
+                  </div>
                 </div>
-              </details>
-            </div>
-          ))}
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
   );
+};
 
-  const KnowledgeBasePage = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 Knowledge Base</h2>
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-        <div className="flex items-start gap-3">
-          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
-            <p className="text-blue-800 text-sm leading-relaxed">
-              Sistem ini menggunakan 12 rules yang telah divalidasi berdasarkan penelitian dari 
-              Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
-            </p>
+  const KnowledgeBasePage = () => {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 Knowledge Base</h2>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
+              <p className="text-blue-800 text-sm leading-relaxed">
+                Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
+                Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+            <span className="ml-3 text-gray-600">Loading rules...</span>
+          </div>
+        ) : (
+          <>
+            {rules.length === 0 ? (
+              <p className="text-gray-700 text-center py-12">Tidak ada rule yang tersedia.</p>
+            ) : (
+              <RuleList
+                rules={rules}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                setCurrentPage={setCurrentPage}
+                onDelete={handleDeleteRule}
+                onUpdate={handleUpdateRule}
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const RuleList = ({ rules, currentPage, itemsPerPage, setCurrentPage, onDelete, onUpdate }) => {
+    const paginatedRules = rules.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(rules.length / itemsPerPage);
+
+    return (
       <div className="space-y-4">
-        {[
-          { id: 'R1', diagnosis: 'Kekurangan Nitrogen (N)', cf: 0.9, conditions: 3 },
-          { id: 'R2', diagnosis: 'Kekurangan Fosfor (P)', cf: 0.85, conditions: 3 },
-          { id: 'R3', diagnosis: 'Kekurangan Kalium (K)', cf: 0.88, conditions: 3 },
-          { id: 'R8', diagnosis: 'Kekurangan Kalsium (Ca) - BER', cf: 0.92, conditions: 3 }
-        ].map((rule) => (
-          <div key={rule.id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Rule {rule.id}</div>
-                <div className="font-semibold text-gray-800 text-lg">{rule.diagnosis}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600">CF</div>
-                <div className="text-xl font-bold text-green-600">{(rule.cf * 100).toFixed(0)}%</div>
-              </div>
+        {paginatedRules.map((rule, idx) => (
+          <div key={rule.id || idx} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex justify-between items-center">
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Rule {rule.id}</div>
+              <div className="font-semibold text-gray-800 text-lg">{rule.diagnosis}</div>
+              <div className="text-sm text-gray-600">{rule.antecedents?.length || 0} kondisi</div>
+              <div className="text-sm text-gray-600">CF: {(rule.cf * 100).toFixed(0)}%</div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span className="bg-gray-100 px-3 py-1 rounded-full">{rule.conditions} kondisi</span>
+            <div className="flex gap-2">
+              {/* <button
+                className="bg-yellow-400 hover:bg-yellow-500 text-white rounded px-3 py-1"
+                onClick={() => {
+                  setEditingRule(rule);
+                  setShowEditModal(true);
+                }}
+              >
+                Edit
+              </button> */}
+              {/* <button
+                className="bg-red-500 hover:bg-red-600 text-white rounded px-3 py-1"
+                onClick={() => onDelete(rule.id)}
+              >
+                Delete
+              </button> */}
             </div>
           </div>
         ))}
+
+        <div className="flex justify-center gap-4 mt-6">
+          <button
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            Prev
+          </button>
+          <span className="pt-2">Page {currentPage} / {totalPages}</span>
+          <button
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const AboutPage = () => (
     <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -396,8 +553,85 @@ const ExpertSystemUI = () => {
       </div>
     </div>
   );
+ 
+const EditRuleModal = ({ rule, onClose, onSave }) => {
+  const [formData, setFormData] = useState(rule || {});
 
-  // Navigation
+  if (!rule) return null;
+
+  // Pastikan rule_id ikut tersimpan (karena backend butuh ini)
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+      rule_id: rule.rule_id || rule.id, // ✅ pastikan tetap ada
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await onSave(formData);
+      onClose(); // ✅ Tutup modal setelah berhasil simpan
+    } catch (err) {
+      console.error("❌ Gagal menyimpan rule:", err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6">
+        <h2 className="text-xl font-bold mb-4 text-gray-800">
+          ✏️ Edit Rule {rule.rule_id}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 text-sm mb-1">CF</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.CF || ""}
+              onChange={(e) => handleChange("CF", parseFloat(e.target.value))}
+              className="w-full border rounded-lg px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 text-sm mb-1">
+              Penjelasan
+            </label>
+            <textarea
+              value={formData.explanation || ""}
+              onChange={(e) => handleChange("explanation", e.target.value)}
+              className="w-full border rounded-lg px-3 py-2"
+              rows="3"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+              Simpan Perubahan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+
   const menuItems = [
     { id: 'home', label: 'Beranda', icon: Leaf },
     { id: 'consultation', label: 'Konsultasi', icon: FlaskConical },
@@ -406,8 +640,9 @@ const ExpertSystemUI = () => {
   ];
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      {/* Header */}
+      <Toaster position="top-right" reverseOrder={false} />
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -426,7 +661,6 @@ const ExpertSystemUI = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
           <aside className="lg:w-64 flex-shrink-0">
             <nav className="bg-white rounded-2xl shadow-md p-4 space-y-2 sticky top-24">
               {menuItems.map(item => (
@@ -446,7 +680,6 @@ const ExpertSystemUI = () => {
             </nav>
           </aside>
 
-          {/* Main Content */}
           <main className="flex-1">
             {activeMenu === 'home' && <HomePage />}
             {activeMenu === 'consultation' && <ConsultationPage />}
@@ -456,7 +689,6 @@ const ExpertSystemUI = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-gray-600 text-sm">
@@ -464,6 +696,13 @@ const ExpertSystemUI = () => {
           </div>
         </div>
       </footer>
+       {showEditModal && editingRule && (
+        <EditRuleModal
+          rule={editingRule}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleUpdateRule}
+        />
+      )}
     </div>
   );
 };
