@@ -66,8 +66,10 @@ class InferenceEngine:
                 if rule_id in self.used_rules:
                     continue
 
-                # Cek apakah semua kondisi rule terpenuhi
-                conditions_met = all(cond in self.working_memory.keys() for cond in rule["IF"])
+                # Jadi minimum match (contoh: minimal 2 dari 3 IF harus ada)
+                required_minimum = max(1, len(rule["IF"]) - 1)  # misal, at least 2 dari 3
+                num_matched = sum(cond in self.working_memory.keys() for cond in rule["IF"])
+                conditions_met = num_matched >= required_minimum
 
                 if not conditions_met:
                     missing = [cond for cond in rule["IF"] if cond not in self.working_memory.keys()]

@@ -67,7 +67,7 @@ const ExpertSystemUI = () => {
     }));
   };
 
-    const runDiagnosis = async () => {
+   const runDiagnosis = async () => {
   // Ambil semua gejala yang dipilih
   const facts = Object.keys(selectedSymptoms);
   const user_cfs = { ...selectedSymptoms };
@@ -94,6 +94,7 @@ const ExpertSystemUI = () => {
     setLoading(false);
   }
 };
+
   const resetConsultation = () => {
     setSelectedSymptoms({});
     setSelectedPhase({ vegetatif: false, generatif: false });
