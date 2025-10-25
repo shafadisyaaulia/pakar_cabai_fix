@@ -1,62 +1,72 @@
-import pandas as pd
-from pathlib import Path
+import csv
+from datetime import datetime
+import json
 
 class ConsultationLogger:
-    def __init__(self, log_file="data/consultations.csv"):
-        self.log_file = log_file
-        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
-        
-        # Buat file CSV jika belum ada
-        if not Path(log_file).exists():
-            df = pd.DataFrame(columns=[
-                "consultation_id", "timestamp", "symptoms", 
-                "fase", "diagnosis", "cf"
-            ])
-            df.to_csv(log_file, index=False)
+    def __init__(self, filename):
+        self.filename = filename
     
-    def log_consultation(self, consultation_data):
-        """Save consultation to CSV"""
+    def log_consultation(self, data: dict):
+        headers = [
+            'consultation_id', 'timestamp', 'symptoms', 'conclusions'
+        ]
         try:
-            df = pd.read_csv(self.log_file)
+            # Cek jika file belum ada dan buat header
+            try:
+                with open(self.filename, 'r', newline='', encoding='utf-8') as f:
+                    pass
+            except FileNotFoundError:
+                with open(self.filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=headers)
+                    writer.writeheader()
             
-            # Extract first diagnosis if available
-            conclusions = consultation_data.get("conclusions", [])
-            diagnosis = conclusions[0].get("diagnosis", "N/A") if conclusions else "N/A"
-            cf = conclusions[0].get("cf", 0.0) if conclusions else 0.0
+            # Serialisasi conclusions dengan penanganan error
+            try:
+                conclusions_json = json.dumps(data.get('conclusions', []), default=str)
+            except (TypeError, ValueError) as e:
+                conclusions_json = '[]'  # fallback
+                print(f"Warning: failed to serialize conclusions: {e}")
             
-            new_row = {
-                "consultation_id": consultation_data.get("consultation_id", "N/A"),
-                "timestamp": consultation_data.get("timestamp", ""),
-                "symptoms": str(consultation_data.get("symptoms", [])),
-                "fase": consultation_data.get("fase", ""),
-                "diagnosis": diagnosis,
-                "cf": cf
-            }
-            
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            df.to_csv(self.log_file, index=False)
+            with open(self.filename, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=headers)
+                row = {
+                    'consultation_id': data.get('consultation_id'),
+                    'timestamp': data.get('timestamp'),
+                    'symptoms': ','.join(data.get('facts', [])),
+                    'conclusions': conclusions_json
+                }
+                writer.writerow(row)
         except Exception as e:
-            print(f"[ERROR] Failed to log consultation: {e}")
+            print(f"Failed to log consultation: {e}")
     
     def load_history(self):
-        """Load consultation history from CSV"""
+        import pandas as pd
         try:
-            if Path(self.log_file).exists():
-                df = pd.read_csv(self.log_file)
-                
-                # ⬇️ CONVERT NaN ke string atau default value
-                df = df.fillna({
-                    "consultation_id": "unknown",
-                    "timestamp": "",
-                    "symptoms": "[]",
-                    "fase": "",
-                    "diagnosis": "No diagnosis",
-                    "cf": 0.0
-                })
-                
-                return df
-            else:
-                return pd.DataFrame()
-        except Exception as e:
-            print(f"[ERROR] Failed to load history: {e}")
+            return pd.read_csv(self.filename)
+        except FileNotFoundError:
             return pd.DataFrame()
+    
+
+    def error(self, message, exc_info=False):
+        """Menangani log error agar kompatibel dengan app.logger.error()."""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_message = f"[ERROR] {timestamp} - {message}"
+
+        if exc_info:
+            import traceback
+            log_message += "\n" + traceback.format_exc()
+
+        print(log_message)  # tampilkan juga di console untuk debugging
+
+        # Simpan error ke file log CSV (opsional)
+        try:
+            with open(self.filename, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['ERROR', timestamp, log_message])
+        except Exception as e:
+            print(f"Gagal menulis log error: {e}")
+
+    def info(self, message):
+        """Tambahan agar bisa juga memanggil app.logger.info()"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[INFO] {timestamp} - {message}")
