@@ -33,7 +33,72 @@ import {
   CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer 
 } from 'recharts';
+// Letakkan setelah import, sebelum ExpertSystemUI
+const EditRuleModal = ({ rule, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    CF: rule.cf || 0.8,
+    explanation: rule.explanation || ''
+  });
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onSave(rule.id, formData);
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Edit Rule {rule.id}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block font-semibold mb-2">Certainty Factor (CF)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="1"
+              value={formData.CF}
+              onChange={(e) => setFormData({...formData, CF: parseFloat(e.target.value)})}
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-2">Explanation</label>
+            <textarea
+              value={formData.explanation}
+              onChange={(e) => setFormData({...formData, explanation: e.target.value})}
+              rows="4"
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-2"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const itemsPerPage = 5;
 
@@ -50,6 +115,7 @@ const ExpertSystemUI = () => {
   const [openCategory, setOpenCategory] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false); 
 
 // State dark mode
 const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -189,16 +255,72 @@ useEffect(() => {
   const paginatedRules = rules.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(rules.length / itemsPerPage);
 
-  const handleDeleteRule = async (ruleId) => {
+const handleDeleteRule = async (ruleId) => {
+  if (!confirm(`Yakin ingin menghapus Rule ${ruleId}?`)) {
+    return;
+  }
+
+  const loadingToast = toast.loading('Menghapus rule...'); // ✅ Loading state
+
   try {
     await deleteRule(ruleId);
-    setRules(prev => prev.filter(rule => rule.id !== ruleId));
-    toast.success(`✅ Rule ${ruleId} berhasil dihapus`);
+    
+    // Refresh rules
+    const refreshedRules = await fetchRules();
+    setRules(refreshedRules);
+    
+    toast.success(`✅ Rule ${ruleId} berhasil dihapus`, { 
+      id: loadingToast // Replace loading toast
+    });
   } catch (err) {
-    toast.error(`❌ Gagal menghapus rule ${ruleId}`);
+    toast.error(`❌ Gagal menghapus: ${err.message}`, {
+      id: loadingToast
+    });
     console.error(err);
   }
 };
+
+// ✅ OPEN ADD MODAL
+const handleAddRule = () => {
+  setEditingRule(null); // Reset editing state
+  setShowAddModal(true);
+};
+
+// ✅ OPEN EDIT MODAL
+const handleEditRule = (rule) => {
+  setEditingRule(rule);
+  setShowEditModal(true);
+};
+
+// ✅ SAVE NEW RULE
+const handleSaveNewRule = async (ruleData) => {
+  try {
+    // Kirim data ke backend
+    const response = await fetch('http://localhost:5000/api/rules', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(ruleData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error);
+    }
+
+    // Ambil ulang rules terbaru dari backend
+    const refreshedRules = await fetchRules();
+
+    // Update state rules agar UI diperbarui
+    setRules(refreshedRules);
+
+    toast.success('Rule berhasil ditambahkan');
+
+    setShowAddModal(false);
+
+  } catch (err) {
+    toast.error('Gagal menambahkan rule: ' + err.message);
+  }
+}
 
 
   const handleUpdateRule = async (ruleId, updatedData) => {
@@ -1015,7 +1137,7 @@ const ReportPage = () => {
 const KnowledgeBasePage = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(''); 
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -1125,23 +1247,21 @@ const filteredRules = rules.filter(rule => {
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
       {/* Header */}
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        📚 Knowledge Base ({filteredRules.length} rules)
-      </h2>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-        <div className="flex items-start gap-3">
-          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
-            <p className="text-blue-800 text-sm leading-relaxed">
-              Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
-              Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">
+          📚 Knowledge Base ({filteredRules.length}/{rules.length})
+        </h2>
+        <button
+          onClick={handleAddRule}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-md hover:shadow-lg"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add New Rule
+        </button>
       </div>
+
 
       {/* ✅ Search & Filter Section */}
       <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
@@ -1247,66 +1367,66 @@ const filteredRules = rules.filter(rule => {
       ) : (
         /* Rules List */
         <>
-          <div className="grid gap-4">
-       
-      {paginatedRules.map((rule) => (
-        <div key={rule.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              {/* ✅ FIX: Ganti rule.THEN?.diagnosis jadi rule.consequent */}
-              <h3 className="text-lg font-bold text-gray-800">
-                {highlightText(rule.id, searchQuery)}: {highlightText(rule.consequent || '', searchQuery)}
-              </h3>
-              <div className="text-sm text-gray-600 mt-1">
-                {/* ✅ FIX: Ganti rule.CF jadi rule.cf */}
-                CF: {((rule.cf || 0) * 100).toFixed(0)}%
-              </div>
-            </div>
+       <div className="grid gap-4">
+  {paginatedRules.map((rule) => (
+    <div 
+      key={rule.id} 
+      className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200 hover:shadow-lg hover:border-green-300 transition-all"
+    >
+      <div className="flex justify-between items-start">
+        {/* Left: Rule Info */}
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
+              {rule.id}
+            </span>
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+              CF: {(rule.cf * 100).toFixed(0)}%
+            </span>
           </div>
 
-          <div className="space-y-2">
-            {/* ✅ FIX: Ganti rule.IF jadi rule.antecedents */}
-            <div>
-              <span className="font-semibold text-gray-700">IF: </span>
-              <span className="text-gray-600">
-                {rule.antecedents?.map((symptom, idx) => (
-                  <span key={idx}>
-                    {highlightText(symptom, searchQuery)}
-                    {idx < rule.antecedents.length - 1 ? ', ' : ''}
-                  </span>
-                ))}
-              </span>
-            </div>
-            
-            {/* ✅ FIX: Ganti rule.THEN jadi rule.recommendation */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 pt-3 border-t">
-              <div>
-                <span className="text-xs text-gray-500">Pupuk:</span>
-                <div className="text-sm text-gray-700">
-                  {highlightText(rule.recommendation?.pupuk || '', searchQuery)}
-                </div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Dosis:</span>
-                <div className="text-sm text-gray-700">{rule.recommendation?.dosis}</div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Metode:</span>
-                <div className="text-sm text-gray-700">{rule.recommendation?.metode}</div>
-              </div>
-            </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">
+            {highlightText(rule.consequent, searchQuery)}
+          </h3>
 
-            {rule.explanation && (
-              <div className="mt-2 pt-2 border-t">
-                <span className="text-xs text-gray-500">Penjelasan:</span>
-                <p className="text-sm text-gray-600 mt-1">{rule.explanation}</p>
-              </div>
-            )}
+          <div className="text-sm text-gray-600 mb-2">
+            <strong>IF:</strong> {rule.antecedents?.length || 0} kondisi
           </div>
+
+          {rule.explanation && (
+            <div className="text-sm text-gray-600 italic bg-gray-50 p-3 rounded-lg mt-2">
+              "{rule.explanation.substring(0, 150)}{rule.explanation.length > 150 ? '...' : ''}"
+            </div>
+          )}
         </div>
-      ))}
 
+        {/* Right: Action Buttons */}
+        <div className="flex flex-col gap-2 ml-4">
+          <button
+            onClick={() => handleEditRule(rule)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-md"
+            title="Edit Rule"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteRule(rule.id)}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-md"
+            title="Delete Rule"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete
+          </button>
+        </div>
       </div>
+    </div>
+  ))}
+</div>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -1526,74 +1646,296 @@ const HistoryPage = () => {
     </div>
   );
  
-const EditRuleModal = ({ rule, onClose, onSave }) => {
-  const [formData, setFormData] = useState(rule || {});
+// ✅ ADD RULE MODAL - NEW COMPONENT
+const AddRuleModal = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+   
+    IF: [],
+    THEN: {
+      diagnosis: '',
+      pupuk: '',
+      dosis: '',
+      metode: ''
+    },
+    CF: 0.8,
+    explanation: ''
+  });
+  const [newCondition, setNewCondition] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!rule) return null;
-
-  // Pastikan rule_id ikut tersimpan (karena backend butuh ini)
   const handleChange = (field, value) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [field]: value,
-      rule_id: rule.rule_id || rule.id, // ✅ pastikan tetap ada
+      [field]: value
+    }));
+  };
+
+  const handleThenChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      THEN: {
+        ...prev.THEN,
+        [field]: value
+      }
+    }));
+  };
+
+  const addCondition = () => {
+    if (newCondition.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        IF: [...prev.IF, newCondition.trim()]
+      }));
+      setNewCondition('');
+    }
+  };
+
+  const removeCondition = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      IF: prev.IF.filter((_, i) => i !== index)
     }));
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await onSave(formData);
-      onClose(); // ✅ Tutup modal setelah berhasil simpan
-    } catch (err) {
-      console.error("❌ Gagal menyimpan rule:", err);
-    }
-  };
+  e.preventDefault();
+  
+  // ✅ VALIDATION (tanpa rule_id karena auto-generated)
+  if (formData.IF.length === 0) {
+    toast.error('❌ Minimal 1 kondisi IF harus ada!');
+    return;
+  }
+  
+  if (!formData.THEN.diagnosis || !formData.THEN.diagnosis.trim()) {
+    toast.error('❌ Diagnosis wajib diisi!');
+    return;
+  }
+
+  if (!formData.THEN.pupuk || !formData.THEN.pupuk.trim()) {
+    toast.error('❌ Pupuk wajib diisi!');
+    return;
+  }
+
+  if (!formData.THEN.dosis || !formData.THEN.dosis.trim()) {
+    toast.error('❌ Dosis wajib diisi!');
+    return;
+  }
+
+  if (!formData.THEN.metode || !formData.THEN.metode.trim()) {
+    toast.error('❌ Metode aplikasi wajib diisi!');
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    await onSave(formData);
+  } catch (err) {
+    console.error('Error saving rule:', err);
+    toast.error('❌ Gagal menyimpan: ' + err.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">
-          ✏️ Edit Rule {rule.rule_id}
-        </h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Rule
+            </h2>
+            <button
+              onClick={onClose}
+              className="hover:bg-white/20 rounded-full p-2 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        
+          {/* Info Box - Auto-generated ID */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2 text-blue-800">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Rule ID akan dibuat otomatis oleh sistem</span>
+          </div>
+        </div>
+
+          {/* IF Conditions */}
+          <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+            <label className="block text-gray-800 font-bold mb-3">
+              IF Conditions <span className="text-red-500">*</span>
+            </label>
+            
+            {/* Condition List */}
+            <div className="space-y-2 mb-3">
+              {formData.IF.map((condition, index) => (
+                <div key={index} className="flex items-center gap-2 bg-white rounded-lg p-3 border border-blue-300">
+                  <span className="flex-1 text-gray-800">{index + 1}. {condition}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCondition(index)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Condition Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newCondition}
+                onChange={(e) => setNewCondition(e.target.value)}
+                placeholder="daun_kuning_merata"
+                className="flex-1 border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCondition();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={addCondition}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Add Condition
+              </button>
+            </div>
+          </div>
+
+          {/* THEN Consequent */}
+          <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200 space-y-4">
+            <label className="block text-gray-800 font-bold mb-2">
+              THEN Consequent <span className="text-red-500">*</span>
+            </label>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Diagnosis</label>
+              <input
+                type="text"
+                value={formData.THEN.diagnosis}
+                onChange={(e) => handleThenChange('diagnosis', e.target.value)}
+                placeholder="Kekurangan Nitrogen (N)"
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Pupuk</label>
+                <input
+                  type="text"
+                  value={formData.THEN.pupuk}
+                  onChange={(e) => handleThenChange('pupuk', e.target.value)}
+                  placeholder="Urea atau ZA"
+                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Dosis</label>
+                <input
+                  type="text"
+                  value={formData.THEN.dosis}
+                  onChange={(e) => handleThenChange('dosis', e.target.value)}
+                  placeholder="150-200 kg/ha"
+                  className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Metode Aplikasi</label>
+              <input
+                type="text"
+                value={formData.THEN.metode}
+                onChange={(e) => handleThenChange('metode', e.target.value)}
+                placeholder="Kocor atau tabur"
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+
+          {/* CF */}
           <div>
-            <label className="block text-gray-700 text-sm mb-1">CF</label>
+            <label className="block text-gray-700 font-semibold mb-2">
+              Certainty Factor (CF)
+            </label>
             <input
               type="number"
               step="0.1"
-              value={formData.CF || ""}
-              onChange={(e) => handleChange("CF", parseFloat(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2"
+              min="0"
+              max="1"
+              value={formData.CF}
+              onChange={(e) => handleChange('CF', parseFloat(e.target.value))}
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500"
             />
+            <div className="text-sm text-gray-600 mt-1">
+              Current: {(formData.CF * 100).toFixed(0)}%
+            </div>
           </div>
 
+          {/* Explanation */}
           <div>
-            <label className="block text-gray-700 text-sm mb-1">
-              Penjelasan
+            <label className="block text-gray-700 font-semibold mb-2">
+              Explanation
             </label>
             <textarea
-              value={formData.explanation || ""}
-              onChange={(e) => handleChange("explanation", e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-              rows="3"
+              value={formData.explanation}
+              onChange={(e) => handleChange('explanation', e.target.value)}
+              placeholder="Penjelasan pakar tentang rule ini..."
+              rows="4"
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500"
             />
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t-2 border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-colors"
+              disabled={isSubmitting}
             >
-              Batal
+              Cancel
             </button>
             <button
               type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={isSubmitting}
             >
-              Simpan Perubahan
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Rule
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -1601,8 +1943,6 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
     </div>
   );
 };
-
-
 
   const menuItems = [
     { id: 'home', label: 'Beranda', icon: Leaf },
@@ -1740,11 +2080,19 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
           </div>
         </div>
       </footer>
-       {showEditModal && editingRule && (
+       {/* ✅ RENDER MODALS - TAMBAH INI */}
+      {showEditModal && editingRule && (
         <EditRuleModal
           rule={editingRule}
           onClose={() => setShowEditModal(false)}
           onSave={handleUpdateRule}
+        />
+      )}
+
+      {showAddModal && (
+        <AddRuleModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleSaveNewRule}
         />
       )}
     </div>

@@ -13,11 +13,21 @@ export async function fetchSymptoms() {
   return await res.json();
 }
 
-export async function fetchRules() {
-  const res = await fetch(`${BASE_URL}/rules`);
-  if (!res.ok) throw new Error("Failed to fetch rules");
-  return await res.json();
-}
+export const fetchRules = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/rules');
+    const data = await response.json();
+    
+    console.log('🔍 fetchRules response:', data); // ← DEBUG
+    console.log('📊 Rules count:', data.length); // ← DEBUG
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching rules:', error);
+    throw error;
+  }
+};
+
 
 // ==========================
 // Diagnosis Endpoint
@@ -142,3 +152,5 @@ export async function fetchTopDiagnoses(topN = 5) {
   if (!res.ok) throw new Error("Failed to fetch top diagnoses");
   return await res.json();
 }
+
+

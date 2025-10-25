@@ -409,6 +409,7 @@ def get_rules():
 
 @app.route('/api/rules', methods=['POST'])
 def add_rule():
+    """Add new rule to knowledge base"""
     if not safe_require_modules():
         return jsonify({"error": "Backend modules not available"}), 503
 
@@ -417,15 +418,82 @@ def add_rule():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        result = app.acq.add_rule_from_dict(data)
-        if result['success']:
-            return jsonify({"message": result['message']}), 201
-        else:
-            return jsonify({"error": result['message']}), 400
+        logger.info(f"[ADD RULE] Received data: {data}")
+
+        # ✅ VALIDATE REQUIRED FIELDS
+        if 'IF' not in data or not isinstance(data['IF'], list):
+            return jsonify({"error": "IF conditions required (must be array)"}), 400
+        
+        if 'THEN' not in data or not isinstance(data['THEN'], dict):
+            return jsonify({"error": "THEN consequent required (must be object)"}), 400
+        
+        if 'diagnosis' not in data['THEN']:
+            return jsonify({"error": "THEN.diagnosis required"}), 400
+
+        # ✅ GENERATE NEW RULE ID - FIX HERE
+        existing_rules = app.kb.rules  # Langsung akses property, bukan method
+        
+        # Get highest rule number
+        rule_numbers = []
+        for rule_id in existing_rules.keys():
+            try:
+                # Extract number from R001, R002, etc
+                if rule_id.startswith('R'):
+                    num = int(rule_id[1:])  # Remove 'R' prefix
+                    rule_numbers.append(num)
+            except (ValueError, IndexError):
+                continue
+        
+        # Generate new ID
+        next_number = max(rule_numbers) + 1 if rule_numbers else 1
+        new_rule_id = f"R{next_number:03d}"  # R001, R002, etc.
+        
+        logger.info(f"[ADD RULE] Generated new rule ID: {new_rule_id}")
+
+        # ✅ CREATE NEW RULE
+        new_rule = {
+            'IF': data['IF'],
+            'THEN': data['THEN'],
+            'CF': float(data.get('CF', 0.8)),
+            'explanation': data.get('explanation', '')
+        }
+
+        # ✅ ADD TO KNOWLEDGE BASE (memory)
+        app.kb.rules[new_rule_id] = new_rule
+        
+        # ✅ SAVE TO FILE
+        try:
+            import json
+            with open('rules.json', 'r', encoding='utf-8') as f:
+                rules_data = json.load(f)
+            
+            # Add new rule
+            rules_data['rules'][new_rule_id] = new_rule
+            
+            # Save back to file
+            with open('rules.json', 'w', encoding='utf-8') as f:
+                json.dump(rules_data, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"[ADD RULE] ✅ Rule {new_rule_id} saved to rules.json")
+        except Exception as save_err:
+            logger.error(f"[ADD RULE] Failed to save to file: {save_err}")
+            # Rollback memory change
+            del app.kb.rules[new_rule_id]
+            return jsonify({
+                "error": f"Failed to save rule: {str(save_err)}"
+            }), 500
+
+        return jsonify({
+            "success": True,
+            "message": f"Rule {new_rule_id} added successfully",
+            "rule_id": new_rule_id,
+            "rule": new_rule
+        }), 201
 
     except Exception as e:
         logger.exception("Error adding rule")
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/api/rules/<rule_id>', methods=['PUT'])

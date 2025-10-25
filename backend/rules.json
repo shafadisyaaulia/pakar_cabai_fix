@@ -26,7 +26,7 @@
         "waktu_aplikasi": "Pagi atau sore hari",
         "precaution": "Hindari aplikasi saat hujan, segera siram setelah aplikasi"
       },
-      "CF": 0.9,
+      "CF": 0.8,
       "explanation": "Nitrogen sangat penting untuk pertumbuhan vegetatif...",
       "hash": "A1",
       "confidence_level": "Sangat Tinggi",
@@ -441,6 +441,21 @@
       "explanation": "Jamur patogen menyebabkan bercak dan gagal buah.",
       "hash": "A20",
       "confidence_level": "Sangat Tinggi"
+    },
+    "R021": {
+      "IF": [
+        "daun_kuning_antara_tulang_daun",
+        "tepi_daun_menggulung",
+        "fase_generatif"
+      ],
+      "THEN": {
+        "diagnosis": "Defisiensi Magnesium (Mg)",
+        "pupuk": "Kieserite atau Dolomit",
+        "dosis": "50-100 kg/ha",
+        "metode": "Tabur atau kocor"
+      },
+      "CF": 0.8,
+      "explanation": "Gejala klorosis (menguning) di antara tulang daun dengan tepi daun menggulung menunjukkan defisiensi magnesium. Magnesium berperan dalam fotosintesis dan pembentukan klorofil. Aplikasi kieserite atau dolomit efektif untuk mengatasi defisiensi ini."
     }
   },
   "rule_metadata": {
