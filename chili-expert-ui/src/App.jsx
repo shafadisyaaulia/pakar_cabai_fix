@@ -51,6 +51,33 @@ const ExpertSystemUI = () => {
   const [editingRule, setEditingRule] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+// State dark mode
+const [isDarkMode, setIsDarkMode] = useState(() => {
+  const saved = localStorage.getItem('darkMode');
+  if (saved !== null) {
+    return saved === 'true';
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+});
+
+
+// Effect untuk toggle
+useEffect(() => {
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('darkMode', 'true');
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('darkMode', 'false');
+  }
+}, [isDarkMode]);
+
+// Toggle function
+  const toggleDarkMode = () => {
+    console.log('🌓 Toggle clicked! Current:', isDarkMode, '→ New:', !isDarkMode); // ← DEBUG 4
+    setIsDarkMode(!isDarkMode);
+  };
+
 
 
   // Load symptoms and rules on component mount
@@ -314,17 +341,17 @@ const HomePage = () => {
             <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
               <stat.icon className="w-6 h-6 text-white" />
             </div>
-            <div className="text-3xl font-bold text-gray-800 mb-1">{stat.value}</div>
-            <div className="text-sm text-gray-600">{stat.label}</div>
+            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">{stat.value}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
           </div>
         ))}
       </div>
 
       {/* Data Visualization Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-colors">
         {/* Pie Chart - Distribusi Diagnosis */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Distribusi Diagnosis</h3>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">📊 Distribusi Diagnosis</h3>
           {loading ? (
             <div className="h-64 flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-green-600" />
@@ -512,7 +539,7 @@ const ConsultationPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           🔍 Konsultasi Pemupukan
         </h2>
@@ -691,93 +718,220 @@ const ConsultationPage = () => {
         )}
       </div>
 
-      {/* Hasil Diagnosis */}
-      {diagnosisResult && (
-        <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
-          {diagnosisResult.conclusions?.length === 0 ? (
-            <p className="text-center text-gray-700 py-12">
-              Tidak ditemukan diagnosis berdasarkan gejala yang dipilih.
-            </p>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 text-green-600">
-                <CheckCircle2 className="w-8 h-8" />
-                <h3 className="text-2xl font-bold">Diagnosis Selesai!</h3>
-              </div>
-
-              {diagnosisResult.conclusions?.map((conclusion, idx) => (
-                <div
-                  key={idx}
-                  className="border-l-4 border-green-500 bg-green-50 rounded-r-xl p-6"
-                >
-                  <h4 className="text-xl font-bold text-gray-800 mb-4">
-                    {idx + 1}. {conclusion.diagnosis}
-                  </h4>
-
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600 mb-1">
-                      Tingkat Kepercayaan
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                        <div
-                          className="bg-green-500 h-full rounded-full transition-all"
-                          style={{ width: `${conclusion.cf * 100}%` }}
-                        />
-                      </div>
-                      <span className="font-bold text-green-600">
-                        {(conclusion.cf * 100).toFixed(1)}%
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        ({conclusion.cf_interpretation})
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="text-sm text-gray-600 mb-1">Pupuk</div>
-                      <div className="font-semibold text-gray-800">
-                        {conclusion.recommendation.pupuk}
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
-                      <div className="text-sm text-gray-600 mb-1">Dosis</div>
-                      <div className="font-semibold text-gray-800">
-                        {conclusion.recommendation.dosis}
-                      </div>
-                    </div>
-                    <div className="col-span-full bg-white rounded-lg p-4 shadow-sm">
-                      <div className="text-sm text-gray-600 mb-1">
-                        Metode Aplikasi
-                      </div>
-                      <div className="font-semibold text-gray-800">
-                        {conclusion.recommendation.metode}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Tombol Download PDF */}
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => {
-                    if (!diagnosisResult.consultation_id) {
-                      toast.error("❌ Consultation ID tidak tersedia");
-                      return;
-                    }
-                    exportPDF(diagnosisResult);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  📄 Download Laporan PDF
-                </button>
-              </div>
-            </>
-          )}
+{/* Hasil Diagnosis */}
+{diagnosisResult && (
+  <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+    {diagnosisResult.conclusions?.length === 0 ? (
+      <p className="text-center text-gray-700 py-12">
+        Tidak ditemukan diagnosis berdasarkan gejala yang dipilih.
+      </p>
+    ) : (
+      <>
+        <div className="flex items-center gap-3 text-green-600">
+          <CheckCircle2 className="w-8 h-8" />
+          <h3 className="text-2xl font-bold">Diagnosis Selesai!</h3>
         </div>
-      )}
+
+        {diagnosisResult.conclusions?.map((conclusion, idx) => (
+          <div
+            key={idx}
+            className="border-l-4 border-green-500 bg-green-50 rounded-r-xl p-6 space-y-4"
+          >
+            <h4 className="text-xl font-bold text-gray-800 mb-4">
+              {idx + 1}. {conclusion.diagnosis}
+            </h4>
+
+            {/* CF Progress Bar */}
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 mb-1">
+                Tingkat Kepercayaan
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-green-500 h-full rounded-full transition-all"
+                    style={{ width: `${conclusion.cf * 100}%` }}
+                  />
+                </div>
+                <span className="font-bold text-green-600">
+                  {(conclusion.cf * 100).toFixed(1)}%
+                </span>
+                <span className="text-sm text-gray-600">
+                  ({conclusion.cf_interpretation})
+                </span>
+              </div>
+            </div>
+
+            {/* Recommendation Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">Pupuk</div>
+                <div className="font-semibold text-gray-800">
+                  {conclusion.recommendation.pupuk}
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">Dosis</div>
+                <div className="font-semibold text-gray-800">
+                  {conclusion.recommendation.dosis}
+                </div>
+              </div>
+              <div className="col-span-full bg-white rounded-lg p-4 shadow-sm">
+                <div className="text-sm text-gray-600 mb-1">
+                  Metode Aplikasi
+                </div>
+                <div className="font-semibold text-gray-800">
+                  {conclusion.recommendation.metode}
+                </div>
+              </div>
+            </div>
+
+            {/* ✅ EXPLANATION SECTION */}
+            <div className="space-y-3 mt-6">
+              {/* HOW Explanation */}
+              {conclusion.how_explanation && (
+                <details className="bg-white rounded-lg p-4 shadow-sm border-2 border-blue-200 hover:border-blue-400 transition-colors">
+                  <summary className="font-semibold text-gray-800 cursor-pointer flex items-center gap-2 hover:text-blue-600 transition-colors">
+                    <Info className="w-5 h-5 text-blue-600" />
+                    🔍 Bagaimana sistem sampai pada kesimpulan ini?
+                  </summary>
+                  
+                  <div className="mt-4 space-y-4">
+                    {/* Natural language explanation */}
+                    {conclusion.how_explanation.answer && (
+                      <div className="text-sm text-gray-700 bg-blue-50 rounded-lg p-4 border border-blue-200 whitespace-pre-line">
+                        {conclusion.how_explanation.answer}
+                      </div>
+                    )}
+
+                    {/* Reasoning steps */}
+                    {conclusion.how_explanation.steps && conclusion.how_explanation.steps.length > 0 && (
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border-2 border-blue-200">
+                        <h5 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                          <ChevronRight className="w-4 h-4" />
+                          📋 Langkah-langkah Penalaran:
+                        </h5>
+                        {conclusion.how_explanation.steps.map((step, i) => (
+                          <div key={i} className="mb-3 pb-3 border-b border-blue-300 last:border-0 bg-white rounded-lg p-3 shadow-sm">
+                            <div className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                                {step.step_number}
+                              </span>
+                              Rule {step.rule_id}
+                            </div>
+                            <div className="text-sm text-blue-700 ml-8 space-y-1">
+                              <div>
+                                <strong className="text-blue-900">IF:</strong> {step.if_conditions.join(' AND ')}
+                              </div>
+                              <div>
+                                <strong className="text-blue-900">THEN:</strong> {step.then_conclusion}
+                              </div>
+                              <div>
+                                <strong className="text-blue-900">CF:</strong> 
+                                <span className="font-semibold text-green-600 ml-1">{step.cf_percentage}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Rules used */}
+                    {conclusion.how_explanation.rules_used && conclusion.how_explanation.rules_used.length > 0 && (
+                      <div className="bg-yellow-50 rounded-lg p-3 border-2 border-yellow-200">
+                        <strong className="text-yellow-900 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" />
+                          📜 Rules yang digunakan:
+                        </strong>
+                        <div className="text-sm text-yellow-800 mt-2 font-mono font-semibold">
+                          {conclusion.how_explanation.rules_used.join(', ')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              {/* Rule Details */}
+              {conclusion.rule_details && (
+                <details className="bg-white rounded-lg p-4 shadow-sm border-2 border-purple-200 hover:border-purple-400 transition-colors">
+                  <summary className="font-semibold text-gray-800 cursor-pointer flex items-center gap-2 hover:text-purple-600 transition-colors">
+                    <BookOpen className="w-5 h-5 text-purple-600" />
+                    📖 Detail Rule {conclusion.rule_id || 'N/A'}
+                  </summary>
+                  
+                  <div className="mt-4 space-y-3">
+                    {/* Natural language rule */}
+                    {conclusion.rule_details.natural_language && (
+                      <div className="text-sm text-gray-700 bg-purple-50 rounded-lg p-4 border-2 border-purple-200 whitespace-pre-line">
+                        {conclusion.rule_details.natural_language}
+                      </div>
+                    )}
+
+                    {/* CF Interpretation */}
+                    {conclusion.rule_details.certainty_factor && (
+                      <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
+                        <strong className="text-indigo-900">📊 Tingkat Kepercayaan:</strong>
+                        <div className="text-sm text-indigo-800 mt-1">
+                          {conclusion.rule_details.certainty_factor.percentage} - {conclusion.rule_details.certainty_factor.interpretation}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expert explanation */}
+                    {conclusion.rule_details.expert_explanation && (
+                      <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                        <strong className="text-green-900 flex items-center gap-2 mb-2">
+                          <Sprout className="w-4 h-4" />
+                          👨‍🌾 Penjelasan Pakar:
+                        </strong>
+                        <div className="text-sm text-green-800 leading-relaxed">
+                          {conclusion.rule_details.expert_explanation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Comparison Section (jika multiple conclusions) */}
+        {diagnosisResult.comparison && diagnosisResult.conclusions.length > 1 && (
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-xl p-6 mt-6">
+            <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              📊 Perbandingan Diagnosis
+            </h3>
+            <div className="text-blue-800 whitespace-pre-line leading-relaxed">
+              {diagnosisResult.comparison.summary}
+            </div>
+          </div>
+        )}
+
+        {/* Tombol Download PDF */}
+        <div className="flex justify-end mt-6 pt-6 border-t-2 border-gray-200">
+          <button
+            onClick={() => {
+              if (!diagnosisResult.consultation_id) {
+                toast.error("❌ Consultation ID tidak tersedia");
+                return;
+              }
+              exportPDF(diagnosisResult);
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Laporan PDF
+          </button>
+        </div>
+      </>
+    )}
+  </div>
+)}
     </div>
   );
 };
@@ -1461,7 +1615,8 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
 
   return (
     
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
+
       <Toaster 
       position="top-right"
       reverseOrder={false}
@@ -1508,7 +1663,8 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
         },
       }}
     />
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+   
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -1516,18 +1672,38 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
                 <Leaf className="w-6 h-6 text-white" />
               </div>
               <div>
-                <div className="font-bold text-gray-800 text-lg">Sistem Pakar</div>
-                <div className="text-xs text-gray-600">Pemupukan Cabai</div>
+                <div className="font-bold text-gray-800 dark:text-gray-100 text-lg transition-colors">Sistem Pakar</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 transition-colors">Pemupukan Cabai</div>
+
               </div>
             </div>
+            <button
+        onClick={toggleDarkMode}
+        className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      >
+        {isDarkMode ? (
+          // Sun icon
+          <svg className="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        ) : (
+          // Moon icon
+          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        )}
+      </button>
           </div>
         </div>
       </header>
 
+         
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-64 flex-shrink-0">
-            <nav className="bg-white rounded-2xl shadow-md p-4 space-y-2 sticky top-24">
+            <nav className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 space-y-2 sticky top-24 transition-colors">
               {menuItems.map(item => (
                 <button
                   key={item.id}
@@ -1535,7 +1711,7 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
                     activeMenu === item.id
                       ? 'bg-green-600 text-white shadow-md'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -1544,6 +1720,7 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
               ))}
             </nav>
           </aside>
+
 
           <main className="flex-1">
             {activeMenu === 'home' && <HomePage />}

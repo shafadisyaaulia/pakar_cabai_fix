@@ -142,7 +142,47 @@ def diagnose():
         result['symptoms'] = symptoms
         result['fase'] = fase
         
-        # ⬇️ FORMAT HASIL DENGAN format_helper
+        # ✅ TAMBAH: Generate explanation untuk setiap conclusion
+        for conclusion in result.get('conclusions', []):
+            try:
+                # HOW explanation
+                how_explanation = app.explainer.explain_how(
+                    conclusion.get('diagnosis', ''),
+                    result.get('reasoning_path', [])
+                )
+                conclusion['how_explanation'] = how_explanation
+                
+                # Rule details
+                rule_id = conclusion.get('rule_id')
+                if rule_id:
+                    rule_explanation = app.explainer.explain_rule(rule_id)
+                    conclusion['rule_details'] = rule_explanation
+                    
+            except Exception as e:
+                logger.warning(f"Failed to generate explanation for {conclusion.get('diagnosis')}: {e}")
+                conclusion['how_explanation'] = {
+                    'answer': 'Explanation not available',
+                    'steps': [],
+                    'rules_used': []
+                }
+        
+        # ✅ TAMBAH: Comparison jika ada multiple conclusions
+        if len(result.get('conclusions', [])) > 1:
+            try:
+                comparison = app.explainer.explain_comparison(result['conclusions'])
+                result['comparison'] = comparison
+            except Exception as e:
+                logger.warning(f"Failed to generate comparison: {e}")
+        
+        # ✅ TAMBAH: Full report (untuk PDF export nanti)
+        try:
+            full_report = app.explainer.generate_full_report(result)
+            result['full_report'] = full_report
+        except Exception as e:
+            logger.warning(f"Failed to generate full report: {e}")
+            result['full_report'] = "Report not available"
+        
+        # Format hasil
         formatted_result = app.format_helper.format_diagnosis_result(result)
         
         # Log consultation
@@ -162,6 +202,69 @@ def diagnose():
     except Exception as e:
         logging.error("Error during diagnosis", exc_info=True)
         return jsonify({"error": "Gagal melakukan diagnosis"}), 500
+
+@app.route('/api/explain/why', methods=['POST'])
+def explain_why():
+    """
+    Endpoint untuk WHY explanation
+    Request body: 
+    {
+        "question": "daun_kuning_merata",
+        "context": {
+            "current_facts": ["fase_vegetatif", "pertumbuhan_lambat"],
+            "potential_goals": ["defisiensi_nitrogen"]
+        }
+    }
+    """
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+    
+    try:
+        data = request.get_json()
+        question = data.get('question')
+        context = data.get('context', {})
+        
+        if not question:
+            return jsonify({"error": "Question is required"}), 400
+        
+        explanation = app.explainer.explain_why(question, context)
+        
+        return jsonify({
+            'success': True,
+            'explanation': explanation
+        })
+    except Exception as e:
+        logger.exception("Error in explain_why")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/explain/rule/<rule_id>', methods=['GET'])
+def explain_rule_endpoint(rule_id):
+    """
+    Endpoint untuk detail explanation dari sebuah rule
+    """
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+    
+    try:
+        explanation = app.explainer.explain_rule(rule_id)
+        
+        if 'error' in explanation:
+            return jsonify(explanation), 404
+        
+        return jsonify({
+            'success': True,
+            'explanation': explanation
+        })
+    except Exception as e:
+        logger.exception(f"Error explaining rule {rule_id}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 from flask import send_file
@@ -234,7 +337,7 @@ def export_pdf():
     try:
         data = request.get_json()
         
-      # ⬇️ VALIDASI consultation_id
+        # ⬇️ VALIDASI consultation_id
         consultation_id = data.get('consultation_id')
         if not consultation_id or consultation_id == "NaN":
             consultation_id = str(uuid.uuid4())[:8]
@@ -247,10 +350,23 @@ def export_pdf():
             "fase": data.get("fase", ""),
             "conclusions": data.get("conclusions", [])
         }
+        # ✅ TAMBAH: Include explanation dan reasoning_path
+        consultation_data = {
+            "consultation_id": consultation_id,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "symptoms": data.get("symptoms", []),
+            "fase": data.get("fase", ""),
+            "conclusions": data.get("conclusions", []),
+            # ✅ TAMBAH field-field ini
+            "reasoning_path": data.get("reasoning_path", []),
+            "used_rules": data.get("used_rules", []),
+            "full_report": data.get("full_report", ""),
+            "comparison": data.get("comparison", None)
+        }
         
         # Generate PDF
         pdf_path = app.pdf.export_consultation_report(consultation_data)
-        
+
         # Return PDF file
         return send_file(
             pdf_path, 

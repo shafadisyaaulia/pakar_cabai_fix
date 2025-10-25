@@ -16,3 +16,11 @@ a3480d9c,2025-10-25T15:35:12.957149,['bercak_coklat_buah'],,fase_vegetatif,Berca
 d9be8ac7,2025-10-25T15:40:11.305116,"['buah_mengkerut', 'daun_menguning_di_tepi']",,fase_vegetatif,Infeksi patogen jamur,0.85
 41fba306,2025-10-25T15:50:28.986046,"['daun_kuning_merata', 'daun_menguning_di_tepi', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9
 03512d5c,2025-10-25T15:52:20.574824,['daun_keriput'],,fase_vegetatif,Serangan Virus Kuning,0.8
+13465607,2025-10-25T16:45:01.702606,"['daun_menguning', 'pertumbuhan_lambat']",,fase_vegetatif,,0.0
+d0d11ec5,2025-10-25T16:45:13.917242,"['daun_menguning', 'pertumbuhan_lambat', 'pertumbuhan_sangat_lambat']",,fase_vegetatif,,0.0
+929ba4bc,2025-10-25T16:45:49.214964,"['daun_menguning', 'pertumbuhan_lambat', 'pertumbuhan_sangat_lambat', 'daun_kuning_merata']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9
+ad60b92b,2025-10-25T16:50:20.674846,"['daun_kuning_merata', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9
+ebc2a149,2025-10-25T16:50:52.877520,['buah_deformasi'],,fase_vegetatif,,0.0
+8ed4e23a,2025-10-25T16:51:02.132921,"['buah_deformasi', 'buah_kecil', 'pertumbuhan_batang_menggulung']",,fase_vegetatif,Keracunan Herbisida,0.8
+d17fb3de,2025-10-25T16:58:05.472301,"['daun_kuning_merata', 'pertumbuhan_sangat_lambat']",,fase_vegetatif,,0.0
+10467992,2025-10-25T16:58:10.001646,"['daun_kuning_merata', 'pertumbuhan_sangat_lambat', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9

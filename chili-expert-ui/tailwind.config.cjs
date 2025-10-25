@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
-    './index.html',
-    './src/**/*.{js,jsx,ts,tsx,html}'
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class', // ← HARUS ADA INI
   theme: {
     extend: {},
   },

@@ -193,12 +193,19 @@ class ExplanationFacility:
             },
             'recommendation_details': rule['THEN']
         }
-        
-        validation = self.kb.validate_rule(rule_id)
-        explanation['validation'] = validation
+    
+        try:
+            if hasattr(self.kb, 'validate_rule'):
+                validation = self.kb.validate_rule(rule_id)
+                explanation['validation'] = validation
+            else:
+                explanation['validation'] = {'status': 'ok', 'message': 'Validation not available'}
+        except Exception as e:
+            explanation['validation'] = {'status': 'error', 'message': str(e)}
         
         self._add_to_history('RULE', explanation)
         return explanation
+
     
     def _rule_to_natural_language(self, rule_id: str, rule: Dict) -> str:
         nl = f"Rule {rule_id} menyatakan bahwa:\n\n"
