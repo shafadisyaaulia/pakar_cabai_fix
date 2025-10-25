@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Leaf, Sprout, FlaskConical, BookOpen, BarChart3, Info, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { fetchSymptoms, diagnose, fetchRules, deleteRule, updateRule } from './api/api.js';
-import toast, { Toaster } from 'react-hot-toast';
-import cabaiImg from "./assets/cabai.avif";
+import { 
+  Leaf, 
+  Sprout, 
+  FlaskConical, 
+  BookOpen, 
+  BarChart3, 
+  Info, 
+  ChevronRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2,
+  Clock
+} from 'lucide-react';
+import { 
+  fetchSymptoms, 
+  diagnose, 
+  fetchRules, 
+  deleteRule, 
+  updateRule, 
+  exportPDF, 
+  fetchHistory,
+  fetchSummaryReport,
+  fetchTopDiagnoses
+} from './api/api.js';
+import { toast, Toaster } from 'react-hot-toast';
+import cabaiImg from './assets/cabai.avif';
 
 
 const itemsPerPage = 5;
@@ -190,14 +212,95 @@ const ExpertSystemUI = () => {
 
 const ConsultationPage = () => {
   const [openCategory, setOpenCategory] = useState(null);
+  const [selectedSymptoms, setSelectedSymptoms] = useState({});
+  const [selectedPhase, setSelectedPhase] = useState({
+    vegetatif: false,
+    generatif: false,
+  });
+  const [symptomCategories, setSymptomCategories] = useState({});
+  const [diagnosisResult, setDiagnosisResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // gunakan symptomCategories dari backend
-  const groupedSymptoms = symptomCategories;
+  // Load symptoms dari backend
+  useEffect(() => {
+    const loadSymptoms = async () => {
+      try {
+        const data = await fetchSymptoms();
+        setSymptomCategories(data);
+      } catch (err) {
+        console.error("Error loading symptoms:", err);
+        setError("Gagal memuat data gejala");
+      }
+    };
+    loadSymptoms();
+  }, []);
+
+  // Toggle symptom dengan CF default 0.8
+  const handleSymptomToggle = (symptom) => {
+    setSelectedSymptoms((prev) => {
+      const updated = { ...prev };
+      if (updated[symptom]) {
+        delete updated[symptom];
+      } else {
+        updated[symptom] = 0.8; // CF default
+      }
+      return updated;
+    });
+  };
+
+  // Update CF untuk symptom tertentu
+  const handleCFChange = (symptom, cfValue) => {
+    setSelectedSymptoms((prev) => ({
+      ...prev,
+      [symptom]: parseFloat(cfValue),
+    }));
+  };
+
+  // Jalankan diagnosis
+  const runDiagnosis = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const selectedSymptomsArray = Object.keys(selectedSymptoms);
+
+      if (selectedSymptomsArray.length === 0) {
+        setError("Pilih minimal satu gejala!");
+        return;
+      }
+
+      if (!selectedPhase.vegetatif && !selectedPhase.generatif) {
+        setError("Pilih fase pertumbuhan!");
+        return;
+      }
+
+      const fase = selectedPhase.vegetatif ? "fase_vegetatif" : "fase_generatif";
+
+      // Kirim dengan CF user
+      const result = await diagnose(selectedSymptomsArray, fase, selectedSymptoms);
+
+      setDiagnosisResult(result);
+    } catch (err) {
+      console.error("Error during diagnosis:", err);
+      setError("Gagal melakukan diagnosis. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset form
+  const resetConsultation = () => {
+    setSelectedSymptoms({});
+    setSelectedPhase({ vegetatif: false, generatif: false });
+    setDiagnosisResult(null);
+    setError(null);
+  };
 
   return (
     <div className="space-y-6">
       <div className="min-h-screen w-full bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8">
-        <h2 className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
           🔍 Konsultasi Pemupukan
         </h2>
 
@@ -233,8 +336,10 @@ const ConsultationPage = () => {
                 />
                 <div className="bg-white border-2 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-xl p-6 transition-all hover:shadow-md">
                   <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full border-2 peer-checked:bg-green-500 peer-checked:border-green-500 mt-1 flex items-center justify-center">
-                      <CheckCircle2 className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:bg-green-500 peer-checked:border-green-500 mt-1 flex items-center justify-center">
+                      {selectedPhase[phase.key] && (
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                      )}
                     </div>
                     <div>
                       <div className="font-semibold text-gray-800">
@@ -249,13 +354,13 @@ const ConsultationPage = () => {
           </div>
         </div>
 
-        {/* Step 2: Pilih Gejala */}
+        {/* Step 2: Pilih Gejala dengan CF Slider */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Step 2: Pilih Gejala yang Terlihat
           </h3>
           <div className="space-y-4">
-            {Object.entries(groupedSymptoms).map(([category, symptoms]) => (
+            {Object.entries(symptomCategories).map(([category, symptoms]) => (
               <div
                 key={category}
                 className="border rounded-lg bg-white shadow-md overflow-hidden"
@@ -275,34 +380,60 @@ const ConsultationPage = () => {
 
                 {/* Isi gejala */}
                 {openCategory === category && (
-                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-4 space-y-4">
                     {symptoms.map((symptom) => (
-                      <label
-                        key={symptom}
-                        className="flex items-center gap-3 text-sm text-gray-700 bg-gray-50 border rounded-lg p-3 hover:bg-green-50 transition cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!!selectedSymptoms[symptom]}
-                          onChange={() =>
-                            setSelectedSymptoms((prev) => {
-                              const updated = { ...prev };
-                              if (updated[symptom]) {
-                                delete updated[symptom];
-                              } else {
-                                updated[symptom] = 0.8; // default CF
+                      <div key={symptom} className="flex flex-col gap-2">
+                        {/* Checkbox dan Label */}
+                        <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedSymptoms[symptom]}
+                            onChange={() => handleSymptomToggle(symptom)}
+                            className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                          />
+                          <span className="text-gray-700 font-medium">
+                            {symptom.replace(/_/g, " ").replace(/\b\w/g, (c) =>
+                              c.toUpperCase()
+                            )}
+                          </span>
+                        </label>
+
+                        {/* CF Slider (tampil jika gejala dicentang) */}
+                        {selectedSymptoms[symptom] !== undefined && (
+                          <div className="ml-8 mr-4 mb-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Tingkat Keyakinan
+                              </label>
+                              <span className="text-sm font-bold text-green-600">
+                                {(selectedSymptoms[symptom] * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.2"
+                              max="1.0"
+                              step="0.2"
+                              value={selectedSymptoms[symptom]}
+                              onChange={(e) =>
+                                handleCFChange(symptom, e.target.value)
                               }
-                              return updated;
-                            })
-                          }
-                          className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                        <span>
-                          {symptom.replace(/_/g, " ").replace(/\b\w/g, (c) =>
-                            c.toUpperCase()
-                          )}
-                        </span>
-                      </label>
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                              style={{
+                                background: `linear-gradient(to right, #10b981 0%, #10b981 ${
+                                  selectedSymptoms[symptom] * 100
+                                }%, #e5e7eb ${
+                                  selectedSymptoms[symptom] * 100
+                                }%, #e5e7eb 100%)`,
+                              }}
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>Tidak Yakin (20%)</span>
+                              <span>Sangat Yakin (100%)</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -319,7 +450,10 @@ const ConsultationPage = () => {
             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Memproses...
+              </>
             ) : (
               "🧠 Diagnosis"
             )}
@@ -400,18 +534,33 @@ const ConsultationPage = () => {
                         {conclusion.recommendation.dosis}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <div className="text-sm text-gray-600 mb-1">
-                      Metode Aplikasi
-                    </div>
-                    <div className="font-semibold text-gray-800">
-                      {conclusion.recommendation.metode}
+                    <div className="col-span-full bg-white rounded-lg p-4 shadow-sm">
+                      <div className="text-sm text-gray-600 mb-1">
+                        Metode Aplikasi
+                      </div>
+                      <div className="font-semibold text-gray-800">
+                        {conclusion.recommendation.metode}
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
+
+              {/* Tombol Download PDF */}
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    if (!diagnosisResult.consultation_id) {
+                      alert("Consultation ID tidak tersedia");
+                      return;
+                    }
+                    exportPDF(diagnosisResult);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                >
+                  📄 Download Laporan PDF
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -420,47 +569,120 @@ const ConsultationPage = () => {
   );
 };
 
-  const KnowledgeBasePage = () => {
+
+const ReportPage = () => {
+    const [report, setReport] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const loadReport = async () => {
+        try {
+          setLoading(true);
+          const data = await fetchSummaryReport();
+          setReport(data);
+        } catch (err) {
+          console.error("Error loading report:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadReport();
+    }, []);
+
     return (
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 Knowledge Base</h2>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-          <div className="flex items-start gap-3">
-            <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
-              <p className="text-blue-800 text-sm leading-relaxed">
-                Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
-                Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
-              </p>
-            </div>
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          📊 Laporan Statistik
+        </h2>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-            <span className="ml-3 text-gray-600">Loading rules...</span>
+          </div>
+        ) : report ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Total Konsultasi</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {report.total_consultations}
+              </div>
+            </div>
+
+            <div className="bg-green-50 p-6 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Rata-rata CF</div>
+              <div className="text-3xl font-bold text-green-600">
+                {report.avg_cf_percentage}
+              </div>
+            </div>
+
+            <div className="bg-purple-50 p-6 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Jenis Diagnosis</div>
+              <div className="text-3xl font-bold text-purple-600">
+                {report.unique_diagnoses}
+              </div>
+            </div>
+
+            <div className="col-span-full bg-gray-50 p-6 rounded-lg">
+              <div className="text-lg font-semibold mb-2">Diagnosis Terbanyak</div>
+              <div className="text-2xl font-bold text-gray-800">
+                {report.most_common_diagnosis}
+              </div>
+              <div className="text-sm text-gray-600">
+                {report.most_common_count} kasus
+              </div>
+            </div>
           </div>
         ) : (
-          <>
-            {rules.length === 0 ? (
-              <p className="text-gray-700 text-center py-12">Tidak ada rule yang tersedia.</p>
-            ) : (
-              <RuleList
-                rules={rules}
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-                setCurrentPage={setCurrentPage}
-                onDelete={handleDeleteRule}
-                onUpdate={handleUpdateRule}
-              />
-            )}
-          </>
+          <p className="text-center text-gray-600 py-12">
+            Tidak ada data laporan.
+          </p>
         )}
       </div>
     );
   };
+
+
+    const KnowledgeBasePage = () => {
+      return (
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 Knowledge Base</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
+                <p className="text-blue-800 text-sm leading-relaxed">
+                  Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
+                  Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+              <span className="ml-3 text-gray-600">Loading rules...</span>
+            </div>
+          ) : (
+            <>
+              {rules.length === 0 ? (
+                <p className="text-gray-700 text-center py-12">Tidak ada rule yang tersedia.</p>
+              ) : (
+                <RuleList
+                  rules={rules}
+                  currentPage={currentPage}
+                  itemsPerPage={itemsPerPage}
+                  setCurrentPage={setCurrentPage}
+                  onDelete={handleDeleteRule}
+                  onUpdate={handleUpdateRule}
+                />
+              )}
+            </>
+          )}
+        </div>
+      );
+    };
 
   const RuleList = ({ rules, currentPage, itemsPerPage, setCurrentPage, onDelete, onUpdate }) => {
     const paginatedRules = rules.slice(
@@ -519,6 +741,110 @@ const ConsultationPage = () => {
       </div>
     );
   };
+const HistoryPage = () => {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchHistory();
+        setHistory(data);
+      } catch (err) {
+        console.error("Error loading history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  // Helper function untuk convert history item ke format PDF
+  const handleDownload = (item) => {
+    try {
+      // Parse symptoms jika masih string
+      let symptomsList = [];
+      if (typeof item.symptoms === 'string') {
+        symptomsList = JSON.parse(item.symptoms.replace(/'/g, '"'));
+      } else if (Array.isArray(item.symptoms)) {
+        symptomsList = item.symptoms;
+      }
+
+      // Convert ke format yang dibutuhkan backend
+      const pdfData = {
+        consultation_id: item.consultation_id || "unknown",
+        timestamp: item.timestamp || "",
+        symptoms: symptomsList,
+        fase: item.fase || "",
+        conclusions: [{
+          diagnosis: item.diagnosis || "No diagnosis",
+          cf: parseFloat(item.cf) || 0.0,
+          recommendation: {
+            pupuk: "N/A",
+            dosis: "N/A",
+            metode: "N/A"
+          }
+        }]
+      };
+      
+      exportPDF(pdfData);
+    } catch (err) {
+      console.error("Error preparing PDF data:", err);
+      alert("Gagal mempersiapkan data untuk PDF");
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        📜 Riwayat Konsultasi
+      </h2>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+        </div>
+      ) : history.length === 0 ? (
+        <p className="text-center text-gray-600 py-12">
+          Belum ada riwayat konsultasi.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {history.map((item, idx) => (
+            <div
+              key={idx}
+              className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500 mb-1">
+                    {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID') : 'N/A'}
+                  </div>
+                  <div className="font-semibold text-gray-800 text-lg mb-2">
+                    {item.diagnosis || 'Tidak ada diagnosis'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">ID:</span> {item.consultation_id || 'N/A'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">CF:</span> {((parseFloat(item.cf) || 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDownload(item)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  📄 Download PDF
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
   const AboutPage = () => (
     <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -641,6 +967,8 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
     { id: 'home', label: 'Beranda', icon: Leaf },
     { id: 'consultation', label: 'Konsultasi', icon: FlaskConical },
     { id: 'knowledge', label: 'Knowledge Base', icon: BookOpen },
+    { id: 'history', label: 'Riwayat', icon: Clock }, 
+    { id: 'reports', label: 'Laporan', icon: BarChart3 },
     { id: 'about', label: 'Tentang', icon: Info }
   ];
 
@@ -689,7 +1017,9 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
             {activeMenu === 'home' && <HomePage />}
             {activeMenu === 'consultation' && <ConsultationPage />}
             {activeMenu === 'knowledge' && <KnowledgeBasePage />}
+            {activeMenu === 'reports' && <ReportPage />} 
             {activeMenu === 'about' && <AboutPage />}
+            {activeMenu === 'history' && <HistoryPage />}
           </main>
         </div>
       </div>

@@ -1,7 +1,9 @@
 from datetime import datetime
 import json
 import logging
-
+from flask import send_file
+import uuid
+from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
@@ -122,17 +124,143 @@ import logging
 
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+
     try:
         data = request.get_json()
         symptoms = data.get('symptoms', [])
         fase = data.get('fase', '')
-        # proses diagnose...
+        user_cfs = data.get('user_cfs', {})
+
+        # Proses diagnosis
         result = app.engine.forward_chaining(symptoms, user_cfs={})
+        
+        # Generate consultation ID
+        consultation_id = str(uuid.uuid4())[:8]
+        result['consultation_id'] = consultation_id
+        result['symptoms'] = symptoms
+        result['fase'] = fase
+        
+        # ⬇️ FORMAT HASIL DENGAN format_helper
+        formatted_result = app.format_helper.format_diagnosis_result(result)
+        
+        # Log consultation
+        try:
+            consultation_data = {
+                "consultation_id": consultation_id,
+                "timestamp": datetime.now().isoformat(),
+                "symptoms": symptoms,
+                "fase": fase,
+                "conclusions": result.get("conclusions", []),
+            }
+            app.logger.log_consultation(consultation_data)
+        except Exception as log_err:
+            print(f"[WARN] Gagal log: {log_err}")
+        
         return jsonify(result)
     except Exception as e:
-        # Gunakan logger Flask asli jika memungkinkan
-        app.logger.error("Error during diagnosis", exc_info=True)
-        return jsonify({"error": "Gagal melakukan diagnosis. Coba lagi."}), 500
+        logging.error("Error during diagnosis", exc_info=True)
+        return jsonify({"error": "Gagal melakukan diagnosis"}), 500
+
+
+from flask import send_file
+
+# @app.route('/api/export/pdf/<consultation_id>', methods=['GET'])
+# def export_pdf(consultation_id):
+#     if not safe_require_modules():
+#         return jsonify({"error": "Backend modules not available"}), 503
+    
+#     try:
+#         # Load consultation by ID (dari history)
+#         history_df = app.logger.load_history()
+#         consultation = history_df[history_df['consultation_id'] == consultation_id].to_dict('records')
+        
+#         if not consultation:
+#             return jsonify({"error": "Consultation not found"}), 404
+        
+#         consultation = consultation[0]
+        
+#         # Generate PDF
+#         pdf_path = app.pdf.export_consultation_report(consultation)
+        
+#         return send_file(pdf_path, as_attachment=True, download_name=f"report_{consultation_id}.pdf")
+#     except Exception as e:
+#         logging.exception("Error exporting PDF")
+#         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reports/summary', methods=['GET'])
+def get_summary_report():
+    """Endpoint untuk get summary report"""
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+    
+    try:
+        # Load history
+        history_df = app.logger.load_history()
+        
+        # Generate report
+        report = app.reporter.generate_summary_report(history_df)
+        
+        return jsonify(report)
+    except Exception as e:
+        logging.exception("Error generating summary report")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reports/top-diagnoses', methods=['GET'])
+def get_top_diagnoses():
+    """Endpoint untuk top diagnoses"""
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+    
+    try:
+        top_n = request.args.get('top', default=5, type=int)
+        
+        history_df = app.logger.load_history()
+        report = app.reporter.generate_top_diagnoses_report(history_df, top_n)
+        
+        return jsonify(report)
+    except Exception as e:
+        logging.exception("Error generating top diagnoses report")
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route('/api/export/pdf', methods=['POST'])
+def export_pdf():
+    if not safe_require_modules():
+        return jsonify({"error": "Backend modules not available"}), 503
+    
+    try:
+        data = request.get_json()
+        
+      # ⬇️ VALIDASI consultation_id
+        consultation_id = data.get('consultation_id')
+        if not consultation_id or consultation_id == "NaN":
+            consultation_id = str(uuid.uuid4())[:8]
+
+        # Prepare data for PDF
+        consultation_data = {
+            "consultation_id": consultation_id,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "symptoms": data.get("symptoms", []),
+            "fase": data.get("fase", ""),
+            "conclusions": data.get("conclusions", [])
+        }
+        
+        # Generate PDF
+        pdf_path = app.pdf.export_consultation_report(consultation_data)
+        
+        # Return PDF file
+        return send_file(
+            pdf_path, 
+            as_attachment=True, 
+            download_name=f"laporan_diagnosis_{consultation_id}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        logging.exception("Error exporting PDF")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/rules', methods=['GET'])
@@ -230,20 +358,47 @@ def delete_rule(rule_id):
 
 
 @app.route('/api/history', methods=['GET'])
-def get_history():
+def get_consultation_history():
+    """Endpoint untuk mendapatkan riwayat konsultasi"""
     if not safe_require_modules():
         return jsonify({"error": "Backend modules not available"}), 503
-
+    
     try:
+        # Load history dari consultation logger
         history_df = app.logger.load_history()
-        if isinstance(history_df, pd.DataFrame) and not history_df.empty:
-            history = history_df.sort_values("timestamp", ascending=False).to_dict('records')
-            return jsonify(history)
-        else:
+        
+        # Convert DataFrame to list of dicts
+        if history_df.empty:
             return jsonify([])
+        
+        # ⬇️ REPLACE NaN dengan None (JSON null) atau default value
+        history_df = history_df.fillna({
+            "consultation_id": "unknown",
+            "timestamp": "",
+            "symptoms": "[]",
+            "fase": "",
+            "diagnosis": "No diagnosis",
+            "cf": 0.0
+        })
+        
+        history_list = history_df.to_dict('records')
+        
+        # Double check: remove NaN jika masih ada
+        for item in history_list:
+            for key, value in item.items():
+                if pd.isna(value):
+                    item[key] = None
+        
+        formatted_history = [
+            app.format_helper.format_history_item(item) 
+            for item in history_list
+        ]
+        return jsonify(formatted_history)
     except Exception as e:
-        logger.exception("Error getting history")
+        logging.exception("Error loading consultation history")
         return jsonify({"error": str(e)}), 500
+
+
 
 
 @app.route('/health', methods=['GET'])

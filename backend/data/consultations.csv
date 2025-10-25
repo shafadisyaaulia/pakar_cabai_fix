@@ -1,0 +1,12 @@
+consultation_id,timestamp,symptoms,conclusions,fase,diagnosis,cf
+3a7b6520,2025-10-25T11:24:58.155627,"['buah_gagal_matang', 'akar_busuk', 'tanaman_lemah', 'pertumbuhan_lambat', 'tanaman_merana_tidak_berbuah', 'fase_generatif']",,"{'buah_gagal_matang': 0.8, 'akar_busuk': 0.8, 'tanaman_lemah': 0.8, 'pertumbuhan_lambat': 0.8, 'tanaman_merana_tidak_berbuah': 0.8, 'fase_generatif': 1}",Defisiensi Cu (Tembaga),0.6719999999999999
+6e9f33c8,2025-10-25T11:50:33.522881,"['akar_pendek', 'pertumbuhan_vegetatif_berlebihan', 'daun_menguning_di_tepi', 'fase_generatif']",,"{'akar_pendek': 0.8, 'pertumbuhan_vegetatif_berlebihan': 0.8, 'daun_menguning_di_tepi': 0.8, 'fase_generatif': 1}",,0.0
+eb98a1d1,2025-10-25T11:50:39.370202,"['akar_pendek', 'pertumbuhan_vegetatif_berlebihan', 'daun_menguning_di_tepi', 'daun_tua_keunguan', 'fase_generatif']",,"{'akar_pendek': 0.8, 'pertumbuhan_vegetatif_berlebihan': 0.8, 'daun_menguning_di_tepi': 0.8, 'daun_tua_keunguan': 0.8, 'fase_generatif': 1}",Defisiensi Fosfor Lanjut,0.7936000000000001
+d3f205aa,2025-10-25T11:59:32.559270,"['daun_kuning_merata', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.8928
+9afdf601,2025-10-25T11:59:40.049496,"['daun_kuning_merata', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.8928
+ae78d8a6,2025-10-25T12:12:50.836411,"['daun_kuning_merata', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9
+134d773a,2025-10-25T12:14:54.925014,"['daun_menguning', 'pertumbuhan_lambat', 'pertumbuhan_vegetatif_berlebihan']",,fase_vegetatif,,0.0
+6eeda7b5,2025-10-25T12:14:57.746356,"['daun_menguning', 'pertumbuhan_lambat']",,fase_vegetatif,,0.0
+096e20de,2025-10-25T12:14:59.127074,"['daun_menguning', 'pertumbuhan_lambat']",,fase_vegetatif,,0.0
+afd02c9e,2025-10-25T12:15:18.025117,"['pertumbuhan_lambat', 'daun_menguning']",,fase_vegetatif,,0.0
+74a6b796,2025-10-25T12:15:47.624929,"['pertumbuhan_lambat', 'daun_menguning', 'daun_tua_keunguan', 'daun_tua_kuning_merata']",,fase_vegetatif,Kekurangan Fosfor (P),0.7
