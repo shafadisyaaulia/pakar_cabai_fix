@@ -642,47 +642,316 @@ const ReportPage = () => {
   };
 
 
-    const KnowledgeBasePage = () => {
-      return (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 Knowledge Base</h2>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-            <div className="flex items-start gap-3">
-              <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
-                <p className="text-blue-800 text-sm leading-relaxed">
-                  Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
-                  Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
-                </p>
+const KnowledgeBasePage = () => {
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(''); 
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Load rules
+  useEffect(() => {
+   const loadRules = async () => {
+  try {
+    setLoading(true);
+    const data = await fetchRules();
+    
+    // ✅ Lihat detail isi first rule
+    console.log("🔍 RAW data from API:", data);
+    console.log("🔍 First rule DETAIL:", JSON.stringify(data[0], null, 2));
+    
+    const rulesArray = Array.isArray(data)
+      ? data
+      : Object.entries(data).map(([id, rule]) => ({ 
+          id, 
+          ...rule 
+        }));
+    
+    console.log("🔍 Converted array:", rulesArray);
+    console.log("🔍 First rule in array DETAIL:", JSON.stringify(rulesArray[0], null, 2));
+    
+    setRules(rulesArray);
+  } catch (err) {
+    console.error("❌ Error loading rules:", err);
+    setRules([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+    loadRules();
+  }, []);
+
+  // ✅ Filter logic
+const filteredRules = rules.filter(rule => {
+  const matchesSearch = 
+    rule.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    rule.consequent?.toLowerCase().includes(searchQuery.toLowerCase()) || // ✅ Ganti dari diagnosis
+    rule.antecedents?.some(symptom => symptom.toLowerCase().includes(searchQuery.toLowerCase())) || // ✅ Ganti dari IF
+    rule.recommendation?.pupuk?.toLowerCase().includes(searchQuery.toLowerCase()); // ✅ Ganti dari THEN.pupuk
+
+  const matchesCategory = 
+    filterCategory === 'all' || 
+    rule.consequent?.toLowerCase().includes(filterCategory.toLowerCase()); // ✅ Ganti dari THEN.diagnosis
+
+  return matchesSearch && matchesCategory;
+});
+
+  // Pagination for filtered results
+  const paginatedRules = filteredRules.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredRules.length / itemsPerPage);
+  
+  const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={index} className="bg-yellow-200 px-1 rounded">{part}</mark>
+      ) : (
+        part
+      )
+    );
+  };
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory]);
+
+  // Delete handler (if you have it)
+  const handleDeleteRule = async (ruleId) => {
+    if (!confirm(`Hapus rule ${ruleId}?`)) return;
+    try {
+      // await deleteRule(ruleId);
+      // await loadRules();
+      alert('Delete feature coming soon!');
+    } catch (err) {
+      console.error("Error deleting rule:", err);
+    }
+  };
+
+  // Update handler (if you have it)
+  const handleUpdateRule = (rule) => {
+    alert('Update feature coming soon!');
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      {/* Header */}
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        📚 Knowledge Base ({filteredRules.length} rules)
+      </h2>
+
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+        <div className="flex items-start gap-3">
+          <Info className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">Tentang Knowledge Base</h3>
+            <p className="text-blue-800 text-sm leading-relaxed">
+              Sistem ini menggunakan {rules.length} rules yang telah divalidasi berdasarkan penelitian dari
+              Balai Penelitian Tanaman Sayuran (Balitsa) dan praktisi pertanian berpengalaman.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ✅ Search & Filter Section */}
+      <div className="bg-gray-50 rounded-xl p-6 mb-6 space-y-4">
+        {/* Search Bar */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="🔍 Cari berdasarkan ID, gejala, diagnosis, atau pupuk..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+          />
+          <span className="absolute left-3 top-3.5 text-gray-400 text-xl">🔍</span>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 font-bold text-xl"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setFilterCategory('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterCategory === 'all'
+                ? 'bg-green-600 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            🌱 Semua
+          </button>
+          <button
+            onClick={() => setFilterCategory('nitrogen')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterCategory === 'nitrogen'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            💧 Nitrogen (N)
+          </button>
+          <button
+            onClick={() => setFilterCategory('fosfor')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterCategory === 'fosfor'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            ⚡ Fosfor (P)
+          </button>
+          <button
+            onClick={() => setFilterCategory('kalium')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterCategory === 'kalium'
+                ? 'bg-orange-600 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            🔥 Kalium (K)
+          </button>
+        </div>
+
+        {/* Results Count */}
+        {(searchQuery || filterCategory !== 'all') && (
+          <div className="text-sm text-gray-600 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+            Menampilkan <strong>{filteredRules.length}</strong> dari <strong>{rules.length}</strong> total rules
+          </div>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+          <span className="ml-3 text-gray-600">Loading rules...</span>
+        </div>
+      ) : filteredRules.length === 0 ? (
+        /* Empty State */
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
+          <p className="text-gray-500 text-lg mb-2">
+            {searchQuery 
+              ? `❌ Tidak ada rules yang cocok dengan "${searchQuery}"` 
+              : '📦 Tidak ada rules'}
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setFilterCategory('all');
+              }}
+              className="text-green-600 hover:text-green-700 font-medium"
+            >
+              Reset pencarian
+            </button>
+          )}
+        </div>
+      ) : (
+        /* Rules List */
+        <>
+          <div className="grid gap-4">
+       
+      {paginatedRules.map((rule) => (
+        <div key={rule.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              {/* ✅ FIX: Ganti rule.THEN?.diagnosis jadi rule.consequent */}
+              <h3 className="text-lg font-bold text-gray-800">
+                {highlightText(rule.id, searchQuery)}: {highlightText(rule.consequent || '', searchQuery)}
+              </h3>
+              <div className="text-sm text-gray-600 mt-1">
+                {/* ✅ FIX: Ganti rule.CF jadi rule.cf */}
+                CF: {((rule.cf || 0) * 100).toFixed(0)}%
               </div>
             </div>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-              <span className="ml-3 text-gray-600">Loading rules...</span>
+          <div className="space-y-2">
+            {/* ✅ FIX: Ganti rule.IF jadi rule.antecedents */}
+            <div>
+              <span className="font-semibold text-gray-700">IF: </span>
+              <span className="text-gray-600">
+                {rule.antecedents?.map((symptom, idx) => (
+                  <span key={idx}>
+                    {highlightText(symptom, searchQuery)}
+                    {idx < rule.antecedents.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </span>
             </div>
-          ) : (
-            <>
-              {rules.length === 0 ? (
-                <p className="text-gray-700 text-center py-12">Tidak ada rule yang tersedia.</p>
-              ) : (
-                <RuleList
-                  rules={rules}
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  setCurrentPage={setCurrentPage}
-                  onDelete={handleDeleteRule}
-                  onUpdate={handleUpdateRule}
-                />
-              )}
-            </>
-          )}
+            
+            {/* ✅ FIX: Ganti rule.THEN jadi rule.recommendation */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 pt-3 border-t">
+              <div>
+                <span className="text-xs text-gray-500">Pupuk:</span>
+                <div className="text-sm text-gray-700">
+                  {highlightText(rule.recommendation?.pupuk || '', searchQuery)}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Dosis:</span>
+                <div className="text-sm text-gray-700">{rule.recommendation?.dosis}</div>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Metode:</span>
+                <div className="text-sm text-gray-700">{rule.recommendation?.metode}</div>
+              </div>
+            </div>
+
+            {rule.explanation && (
+              <div className="mt-2 pt-2 border-t">
+                <span className="text-xs text-gray-500">Penjelasan:</span>
+                <p className="text-sm text-gray-600 mt-1">{rule.explanation}</p>
+              </div>
+            )}
+          </div>
         </div>
-      );
-    };
+      ))}
+
+      </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors"
+              >
+                ← Previous
+              </button>
+              <span className="text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
   const RuleList = ({ rules, currentPage, itemsPerPage, setCurrentPage, onDelete, onUpdate }) => {
     const paginatedRules = rules.slice(
