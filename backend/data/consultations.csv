@@ -10,3 +10,9 @@ ae78d8a6,2025-10-25T12:12:50.836411,"['daun_kuning_merata', 'pertumbuhan_lambat'
 096e20de,2025-10-25T12:14:59.127074,"['daun_menguning', 'pertumbuhan_lambat']",,fase_vegetatif,,0.0
 afd02c9e,2025-10-25T12:15:18.025117,"['pertumbuhan_lambat', 'daun_menguning']",,fase_vegetatif,,0.0
 74a6b796,2025-10-25T12:15:47.624929,"['pertumbuhan_lambat', 'daun_menguning', 'daun_tua_keunguan', 'daun_tua_kuning_merata']",,fase_vegetatif,Kekurangan Fosfor (P),0.7
+a3480d9c,2025-10-25T15:35:12.957149,['bercak_coklat_buah'],,fase_vegetatif,Bercak antraknosa (jamur),0.7
+31e6d50d,2025-10-25T15:35:18.829862,"['bercak_coklat_buah', 'bunga_terlambat']",,fase_vegetatif,Bercak antraknosa (jamur),0.7
+69c0e157,2025-10-25T15:35:32.079807,['daun_tua_menguning_duluan'],,fase_generatif,,0.0
+d9be8ac7,2025-10-25T15:40:11.305116,"['buah_mengkerut', 'daun_menguning_di_tepi']",,fase_vegetatif,Infeksi patogen jamur,0.85
+41fba306,2025-10-25T15:50:28.986046,"['daun_kuning_merata', 'daun_menguning_di_tepi', 'pertumbuhan_lambat']",,fase_vegetatif,Kekurangan Nitrogen (N),0.9
+03512d5c,2025-10-25T15:52:20.574824,['daun_keriput'],,fase_vegetatif,Serangan Virus Kuning,0.8

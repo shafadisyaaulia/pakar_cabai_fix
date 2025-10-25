@@ -23,8 +23,16 @@ import {
   fetchSummaryReport,
   fetchTopDiagnoses
 } from './api/api.js';
-import { toast, Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import cabaiImg from './assets/cabai.avif';
+import { 
+  PieChart, Pie, Cell, 
+  BarChart, Bar, 
+  LineChart, Line,  
+  XAxis, YAxis, 
+  CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer 
+} from 'recharts';
 
 
 const itemsPerPage = 5;
@@ -89,9 +97,22 @@ const ExpertSystemUI = () => {
     }));
   };
 
-   const runDiagnosis = async () => {
-  // Ambil semua gejala yang dipilih
+  const runDiagnosis = async () => {
+  // Validasi: Pilih minimal 1 gejala
   const facts = Object.keys(selectedSymptoms);
+  
+  // ✅ TAMBAH: Toast validation untuk gejala
+  if (facts.length === 0) {
+    toast.error('⚠️ Pilih minimal satu gejala!');
+    return;
+  }
+
+  // ✅ TAMBAH: Toast validation untuk fase
+  if (!selectedPhase.vegetatif && !selectedPhase.generatif) {
+    toast.error('⚠️ Pilih fase pertumbuhan!');
+    return;
+  }
+
   const user_cfs = { ...selectedSymptoms };
 
   // Tambahkan fakta fase pertumbuhan (biar dikirim ke backend)
@@ -106,16 +127,30 @@ const ExpertSystemUI = () => {
 
   console.log("🔍 Data dikirim ke backend:", facts);
 
+  // ✅ TAMBAH: Loading toast
+  const loadingToast = toast.loading('🔍 Sedang menganalisis...');
+
   try {
     setLoading(true);
     const response = await diagnose(facts, user_cfs);
     setDiagnosisResult(response);
+    
+    // ✅ TAMBAH: Success toast
+    toast.dismiss(loadingToast);
+    toast.success('✅ Diagnosis berhasil!');
+    
   } catch (err) {
     setError(err.message);
+    
+    // ✅ TAMBAH: Error toast
+    toast.dismiss(loadingToast);
+    toast.error('❌ Gagal melakukan diagnosis: ' + err.message);
+    
   } finally {
     setLoading(false);
   }
 };
+
 
   const resetConsultation = () => {
     setSelectedSymptoms({});
@@ -154,18 +189,91 @@ const ExpertSystemUI = () => {
 
 
 
-  // Menu Components
-  const HomePage = () => (
+ // Menu Components
+const HomePage = () => {
+  // State
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load rules
+  useEffect(() => {
+    const loadRules = async () => {
+      try {
+        const data = await fetchRules();
+        const rulesArray = Array.isArray(data)
+          ? data
+          : Object.entries(data).map(([id, rule]) => ({ id, ...rule }));
+        setRules(rulesArray);
+      } catch (err) {
+      console.error(err);
+      setRules([]);
+      // ✅ TAMBAH: Error toast
+      toast.error('❌ Gagal memuat data rules');
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadRules();
+}, []);
+
+  // Data preparation untuk Pie Chart
+  const diagnosisData = rules.reduce((acc, rule) => {
+    const diagnosis = rule.consequent || 'Unknown';
+    const existing = acc.find(item => item.name === diagnosis);
+    if (existing) {
+      existing.value += 1;
+    } else {
+      acc.push({ name: diagnosis, value: 1 });
+    }
+    return acc;
+  }, []);
+
+  // Data preparation untuk Bar Chart
+  const cfData = [
+    {
+      category: 'Nitrogen',
+      avgCF: rules
+        .filter(r => r.consequent?.toLowerCase().includes('nitrogen'))
+        .reduce((sum, r) => sum + (r.cf || 0), 0) / 
+        rules.filter(r => r.consequent?.toLowerCase().includes('nitrogen')).length || 0
+    },
+    {
+      category: 'Fosfor',
+      avgCF: rules
+        .filter(r => r.consequent?.toLowerCase().includes('fosfor'))
+        .reduce((sum, r) => sum + (r.cf || 0), 0) / 
+        rules.filter(r => r.consequent?.toLowerCase().includes('fosfor')).length || 0
+    },
+    {
+      category: 'Kalium',
+      avgCF: rules
+        .filter(r => r.consequent?.toLowerCase().includes('kalium'))
+        .reduce((sum, r) => sum + (r.cf || 0), 0) / 
+        rules.filter(r => r.consequent?.toLowerCase().includes('kalium')).length || 0
+    },
+  ].filter(d => d.avgCF > 0);
+
+  // Data preparation untuk Line Chart
+  const cfRangeData = [
+    { range: '0-20%', count: rules.filter(r => r.cf <= 0.2).length },
+    { range: '21-40%', count: rules.filter(r => r.cf > 0.2 && r.cf <= 0.4).length },
+    { range: '41-60%', count: rules.filter(r => r.cf > 0.4 && r.cf <= 0.6).length },
+    { range: '61-80%', count: rules.filter(r => r.cf > 0.6 && r.cf <= 0.8).length },
+    { range: '81-100%', count: rules.filter(r => r.cf > 0.8).length },
+  ];
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+  return (
     <div className="space-y-8">
+      
       {/* Hero Section */}
       <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-      <img
-        src={cabaiImg}
-        alt="Chili Plants"
-        className="w-full h-full object-cover"
-      />
-
-
+        <img
+          src={cabaiImg}
+          alt="Chili Plants"
+          className="w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
           <div className="p-8 text-white">
             <h1 className="text-4xl font-bold mb-3">🌶️ Sistem Pakar Pemupukan Cabai</h1>
@@ -177,10 +285,30 @@ const ExpertSystemUI = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Rules', value: rules.length.toString(), icon: BookOpen, color: 'bg-blue-500' },
-          { label: 'Diagnosis Unik', value: '10', icon: FlaskConical, color: 'bg-green-500' },
-          { label: 'Avg CF', value: '0.86', icon: BarChart3, color: 'bg-purple-500' },
-          { label: 'Total Nutrisi', value: '8', icon: Sprout, color: 'bg-orange-500' }
+          { 
+            label: 'Total Rules', 
+            value: rules.length.toString(), 
+            icon: BookOpen, 
+            color: 'bg-blue-500' 
+          },
+          { 
+            label: 'Diagnosis Unik', 
+            value: diagnosisData.length.toString(), 
+            icon: FlaskConical, 
+            color: 'bg-green-500' 
+          },
+          { 
+            label: 'Avg CF', 
+            value: (rules.reduce((sum, r) => sum + (r.cf || 0), 0) / rules.length || 0).toFixed(2), 
+            icon: BarChart3, 
+            color: 'bg-purple-500' 
+          },
+          { 
+            label: 'Total Nutrisi', 
+            value: '8', 
+            icon: Sprout, 
+            color: 'bg-orange-500' 
+          }
         ].map((stat, idx) => (
           <div key={idx} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
@@ -190,6 +318,87 @@ const ExpertSystemUI = () => {
             <div className="text-sm text-gray-600">{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Data Visualization Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pie Chart - Distribusi Diagnosis */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Distribusi Diagnosis</h3>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={diagnosisData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {diagnosisData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Bar Chart - Average CF per Kategori */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">📈 Average CF per Kategori</h3>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={cfData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="category" />
+                <YAxis domain={[0, 1]} />
+                <Tooltip formatter={(value) => (value * 100).toFixed(0) + '%'} />
+                <Legend />
+                <Bar dataKey="avgCF" fill="#10b981" name="Avg Certainty Factor" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Line Chart - CF Range Distribution */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">📉 Distribusi CF Range</h3>
+        {loading ? (
+          <div className="h-64 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={cfRangeData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="range" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="count" 
+                stroke="#8884d8" 
+                strokeWidth={2}
+                name="Jumlah Rules"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* About Section */}
@@ -209,6 +418,8 @@ const ExpertSystemUI = () => {
       </div>
     </div>
   );
+};
+
 
 const ConsultationPage = () => {
   const [openCategory, setOpenCategory] = useState(null);
@@ -229,12 +440,14 @@ const ConsultationPage = () => {
         const data = await fetchSymptoms();
         setSymptomCategories(data);
       } catch (err) {
-        console.error("Error loading symptoms:", err);
-        setError("Gagal memuat data gejala");
-      }
-    };
-    loadSymptoms();
-  }, []);
+      console.error('Error loading symptoms:', err);
+      setError('Gagal memuat data gejala');
+      // ✅ TAMBAH: Error toast
+      toast.error('❌ Gagal memuat data gejala');
+    }
+  };
+  loadSymptoms();
+}, []);
 
   // Toggle symptom dengan CF default 0.8
   const handleSymptomToggle = (symptom) => {
@@ -551,7 +764,7 @@ const ConsultationPage = () => {
                 <button
                   onClick={() => {
                     if (!diagnosisResult.consultation_id) {
-                      alert("Consultation ID tidak tersedia");
+                      toast.error("❌ Consultation ID tidak tersedia");
                       return;
                     }
                     exportPDF(diagnosisResult);
@@ -575,19 +788,22 @@ const ReportPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-      const loadReport = async () => {
-        try {
-          setLoading(true);
-          const data = await fetchSummaryReport();
-          setReport(data);
-        } catch (err) {
-          console.error("Error loading report:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      loadReport();
-    }, []);
+  const loadReport = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchSummaryReport();
+      setReport(data);
+    } catch (err) {
+      console.error('Error loading report:', err);
+      // ✅ TAMBAH: Error toast
+      toast.error('❌ Gagal memuat laporan statistik');
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadReport();
+}, []);
+
 
     return (
       <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -673,15 +889,16 @@ const KnowledgeBasePage = () => {
     
     setRules(rulesArray);
   } catch (err) {
-    console.error("❌ Error loading rules:", err);
-    setRules([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-    loadRules();
-  }, []);
+      console.error("Error loading rules:", err);
+      setRules([]);
+      // ✅ TAMBAH: Error toast
+      toast.error('❌ Gagal memuat data knowledge base');
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadRules();
+}, []);
 
   // ✅ Filter logic
 const filteredRules = rules.filter(rule => {
@@ -728,7 +945,13 @@ const filteredRules = rules.filter(rule => {
     try {
       // await deleteRule(ruleId);
       // await loadRules();
-      alert('Delete feature coming soon!');
+     toast.info('ℹ️ Delete feature coming soon!', {
+      icon: 'ℹ️',
+      style: {
+        background: '#dbeafe',
+        color: '#1e40af',
+      }
+    });
     } catch (err) {
       console.error("Error deleting rule:", err);
     }
@@ -736,8 +959,14 @@ const filteredRules = rules.filter(rule => {
 
   // Update handler (if you have it)
   const handleUpdateRule = (rule) => {
-    alert('Update feature coming soon!');
-  };
+  toast.info('ℹ️ Update feature coming soon!', {
+    icon: 'ℹ️',
+    style: {
+      background: '#dbeafe',
+      color: '#1e40af',
+    }
+  });
+};
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -971,21 +1200,6 @@ const filteredRules = rules.filter(rule => {
               <div className="text-sm text-gray-600">CF: {(rule.cf * 100).toFixed(0)}%</div>
             </div>
             <div className="flex gap-2">
-              {/* <button
-                className="bg-yellow-400 hover:bg-yellow-500 text-white rounded px-3 py-1"
-                onClick={() => {
-                  setEditingRule(rule);
-                  setShowEditModal(true);
-                }}
-              >
-                Edit
-              </button> */}
-              {/* <button
-                className="bg-red-500 hover:bg-red-600 text-white rounded px-3 py-1"
-                onClick={() => onDelete(rule.id)}
-              >
-                Delete
-              </button> */}
             </div>
           </div>
         ))}
@@ -1014,20 +1228,22 @@ const HistoryPage = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchHistory();
-        setHistory(data);
-      } catch (err) {
-        console.error("Error loading history:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadHistory();
-  }, []);
+ useEffect(() => {
+  const loadHistory = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchHistory();
+      setHistory(data);
+    } catch (err) {
+      console.error('Error loading history:', err);
+      // ✅ TAMBAH: Error toast
+      toast.error('❌ Gagal memuat riwayat konsultasi');
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadHistory();
+}, []);
 
   // Helper function untuk convert history item ke format PDF
   const handleDownload = (item) => {
@@ -1058,9 +1274,11 @@ const HistoryPage = () => {
       };
       
       exportPDF(pdfData);
+      toast.success('📄 PDF berhasil di-download!');
+    
     } catch (err) {
       console.error("Error preparing PDF data:", err);
-      alert("Gagal mempersiapkan data untuk PDF");
+      toast.error("❌ Gagal mempersiapkan data untuk PDF");
     }
   };
 
@@ -1244,7 +1462,52 @@ const EditRuleModal = ({ rule, onClose, onSave }) => {
   return (
     
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster 
+      position="top-right"
+      reverseOrder={false}
+      toastOptions={{
+        duration: 3000,
+        style: {
+          background: '#fff',
+          color: '#1f2937',
+          padding: '16px',
+          borderRadius: '10px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+        success: {
+          duration: 3000,
+          iconTheme: {
+            primary: '#10b981',
+            secondary: '#fff',
+          },
+          style: {
+            background: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #10b981',
+          },
+        },
+        error: {
+          duration: 4000,
+          iconTheme: {
+            primary: '#ef4444',
+            secondary: '#fff',
+          },
+          style: {
+            background: '#fef2f2',
+            color: '#991b1b',
+            border: '1px solid #ef4444',
+          },
+        },
+        loading: {
+          iconTheme: {
+            primary: '#3b82f6',
+            secondary: '#fff',
+          },
+        },
+      }}
+    />
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
